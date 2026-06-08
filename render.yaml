@@ -7,6 +7,7 @@ services:
     runtime: node
     plan: free # upgrade to "starter" to avoid cold-start spin-down
     region: oregon # pick the region closest to your Supabase project
+    rootDir: frontend/web # Next.js app lives here; prisma schema is at ../../backend/prisma
     buildCommand: npm install && npm run build
     startCommand: npm run start
     healthCheckPath: /
