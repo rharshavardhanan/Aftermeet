@@ -28,41 +28,53 @@ deadlines, risks, follow-up emails, and professional Meeting Minutes — across
 
 ## Project layout
 
+The repo splits into **frontend** (client surfaces) and **backend** (data layer):
+
 ```
-app/
-  page.tsx                 Landing page
-  login/                   Google sign-in
-  onboarding/              3-step wizard
-  (app)/                   Authenticated shell (sidebar + topbar)
-    dashboard/             Stats, pending tasks, insights, recent meetings
-    workspace/             New meeting + 3-panel meeting view ([id])
-    history/  settings/  billing/
-  extension/               Extension install/onboarding page
-  actions/                 Server actions (meetings, tasks, onboarding, settings)
-  api/
-    auth/[...nextauth]/    NextAuth
-    transcribe/            Whisper endpoint
-    extension/process/     Extension → extraction (credentialed CORS)
-    stripe/{checkout,webhook}/
-components/                 ui/ (primitives), app/, workspace/, marketing/, brand/
-lib/
-  ai/                      schema (zod + json-schema), prompt, extract, transcribe, mock
-  auth.ts prisma.ts openai.ts stripe.ts export.ts plans.ts validations.ts utils.ts
-prisma/schema.prisma       Full data model
-extension/                 Chrome MV3 extension (see extension/README.md)
-android/                   Capacitor Android shell (see android/README.md)
-capacitor.config.ts
+frontend/
+  web/                       The Next.js full-stack app (also hosts the API + server actions)
+    app/
+      page.tsx               Landing page
+      login/                 Google sign-in
+      onboarding/            3-step wizard
+      (app)/                 Authenticated shell (sidebar + topbar)
+        dashboard/           Stats, pending tasks, insights, recent meetings
+        workspace/           New meeting + 3-panel meeting view ([id])
+        history/  settings/  billing/
+      extension/             Extension install/onboarding page
+      actions/               Server actions (meetings, tasks, onboarding, settings)
+      api/
+        auth/[...nextauth]/  NextAuth
+        transcribe/          Whisper endpoint
+        extension/process/   Extension → extraction (credentialed CORS)
+        stripe/{checkout,webhook}/
+    components/              ui/ (primitives), app/, workspace/, marketing/, brand/
+    lib/
+      ai/                    schema (zod + json-schema), prompt, extract, transcribe, mock
+      auth.ts prisma.ts openai.ts stripe.ts export.ts plans.ts validations.ts utils.ts
+    android/                 Capacitor Android shell (mobile = WebView of the web app)
+    mobile/  capacitor.config.ts
+    package.json  next.config.ts  tsconfig.json  .env
+  extension/                 Chrome MV3 extension (see extension/README.md)
+backend/
+  prisma/schema.prisma       Full data model
+  supabase/                  Postgres migrations + config (see supabase/README.md)
 ```
+
+> The Next.js app is a self-contained npm package under `frontend/web/` — run all
+> `npm` commands from there. The DB schema lives in `backend/`; `frontend/web/package.json`
+> points Prisma at it via the `prisma.schema` key.
 
 ---
 
 ## Quick start
 
 ```bash
+cd frontend/web               # the Next.js app lives here
 npm install
 cp .env.example .env          # fill in values (see below)
 npm run db:generate
-npm run db:push               # push schema to your Postgres
+npm run db:push               # push schema to your Postgres (backend/prisma/schema.prisma)
 npm run dev                   # http://localhost:4000
 ```
 

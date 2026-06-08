@@ -14,7 +14,7 @@ next-env.d.ts
 .env*.local
 
 # prisma
-prisma/*.db
+backend/prisma/*.db
 
 # misc
 .DS_Store
@@ -25,11 +25,11 @@ yarn-debug.log*
 *.tsbuildinfo
 
 # capacitor / android
-android/app/build
-android/build
-android/.gradle
-android/local.properties
-android/app/src/main/assets/public
+frontend/web/android/app/build
+frontend/web/android/build
+frontend/web/android/.gradle
+frontend/web/android/local.properties
+frontend/web/android/app/src/main/assets/public
 
 # extension build output
-extension/dist
+frontend/extension/dist

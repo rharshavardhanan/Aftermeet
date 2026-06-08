@@ -3,6 +3,12 @@
 Aftermeet ships **three client surfaces** that all talk to **one backend**.
 The backend is the source of truth; every client is a thin frontend over it.
 
+> **Repo layout.** Client code lives under `frontend/` (`frontend/web/` is the
+> Next.js app that *also* hosts the backend; `frontend/extension/` is the Chrome
+> extension). The shared data layer lives under `backend/` (`backend/prisma/`,
+> `backend/supabase/`). Paths below are written relative to `frontend/web/` unless
+> prefixed (e.g. `backend/prisma/schema.prisma`).
+
 ```
                        ┌──────────────────────────────────────────┐
    3 FRONTENDS         │                ONE BACKEND                │
@@ -80,13 +86,14 @@ concrete demonstration that all three surfaces share one backend.
 ## Run it
 
 ```bash
-# 1. Backend DB: provision Supabase, apply supabase/migrations/* (see supabase/README.md)
-# 2. Env: cp .env.example .env  and fill DATABASE_URL / DIRECT_URL (+ optional keys)
+# 1. Backend DB: provision Supabase, apply backend/supabase/migrations/* (see backend/supabase/README.md)
+# 2. Env: cd frontend/web && cp .env.example .env  and fill DATABASE_URL / DIRECT_URL (+ optional keys)
+cd frontend/web        # the Next.js app (frontend + backend) is one npm package here
 npm install
 npm run db:generate
 npm run dev            # website + app + API on http://localhost:4000
 
-npm run ext:build      # → extension/dist/*.zip  (load unpacked from extension/)
+npm run ext:build      # → ../extension/dist/*.zip  (load unpacked from frontend/extension/)
 npm run cap:sync       # → Android shell of the deployed app
 ```
 
