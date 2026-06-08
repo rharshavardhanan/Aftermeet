@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Sparkles, Upload, Mic, Square, Loader2, FileText, Clipboard, MonitorSpeaker } from "lucide-react";
+import { Sparkles, Upload, Mic, Square, Loader2, FileText, Clipboard, MonitorSpeaker, Globe } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,27 @@ Marco: Yes, I'll have it done by Wednesday.
 Sarah: I'll also loop in design on the launch assets.
 Alex: Great. Let's review progress in our sync on Monday.`;
 
+const LANGUAGES = [
+  { code: "", label: "Auto-detect" },
+  { code: "ta", label: "Tamil" },
+  { code: "hi", label: "Hindi" },
+  { code: "te", label: "Telugu" },
+  { code: "kn", label: "Kannada" },
+  { code: "ml", label: "Malayalam" },
+  { code: "bn", label: "Bengali" },
+  { code: "mr", label: "Marathi" },
+  { code: "ur", label: "Urdu" },
+  { code: "ar", label: "Arabic" },
+  { code: "zh", label: "Chinese" },
+  { code: "ja", label: "Japanese" },
+  { code: "ko", label: "Korean" },
+  { code: "fr", label: "French" },
+  { code: "de", label: "German" },
+  { code: "es", label: "Spanish" },
+  { code: "pt", label: "Portuguese" },
+  { code: "en", label: "English" },
+];
+
 type Mode = "paste" | "upload" | "record";
 
 export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean }) {
@@ -32,6 +53,7 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
   const [pending, startTransition] = useTransition();
   const [transcribing, setTranscribing] = useState(false);
   const [captureMode, setCaptureMode] = useState<"mic" | "system">("mic");
+  const [language, setLanguage] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const recorder = useRecorder();
 
@@ -40,6 +62,7 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
     try {
       const form = new FormData();
       form.append("audio", file);
+      if (language) form.append("language", language);
       const res = await fetch("/api/transcribe", { method: "POST", body: form });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Transcription failed");
@@ -110,11 +133,29 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
 
       <div className="p-5">
         <Tabs value={tab} onValueChange={(v) => setTab(v as Mode)}>
-          <TabsList>
-            <TabsTrigger value="paste"><Clipboard className="mr-1.5 size-3.5" /> Paste</TabsTrigger>
-            <TabsTrigger value="upload"><Upload className="mr-1.5 size-3.5" /> Upload</TabsTrigger>
-            <TabsTrigger value="record"><Mic className="mr-1.5 size-3.5" /> Record</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <TabsList>
+              <TabsTrigger value="paste"><Clipboard className="mr-1.5 size-3.5" /> Paste</TabsTrigger>
+              <TabsTrigger value="upload"><Upload className="mr-1.5 size-3.5" /> Upload</TabsTrigger>
+              <TabsTrigger value="record"><Mic className="mr-1.5 size-3.5" /> Record</TabsTrigger>
+            </TabsList>
+            {/* Language hint — only relevant for audio tabs */}
+            {tab !== "paste" && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Globe className="size-3.5 shrink-0" />
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="bg-transparent text-xs text-foreground border-0 outline-none cursor-pointer hover:text-foreground/70"
+                  title="Spoken language — helps with non-English audio"
+                >
+                  {LANGUAGES.map((l) => (
+                    <option key={l.code} value={l.code}>{l.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
 
           <TabsContent value="paste">
             <Textarea
