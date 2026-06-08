@@ -18,6 +18,19 @@ type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string };
 export async function processMeeting(
   input: ProcessMeetingInput,
 ): Promise<ActionResult<{ meetingId: string }>> {
+  // Outer guard: any unhandled throw (DB cold-start, auth, network) returns a
+  // structured error instead of triggering the global error boundary.
+  try {
+    return await _processMeeting(input);
+  } catch (err) {
+    console.error("processMeeting unhandled error", err);
+    return { ok: false, error: "An unexpected error occurred. Please try again." };
+  }
+}
+
+async function _processMeeting(
+  input: ProcessMeetingInput,
+): Promise<ActionResult<{ meetingId: string }>> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: "You need to sign in." };
 
@@ -65,17 +78,30 @@ export async function processMeeting(
     }
   } catch (err) {
     console.error("extraction failed", err);
-    const msg = err instanceof Error ? err.message : "";
-    if (/429|quota|rate.?limit|RESOURCE_EXHAUSTED/i.test(msg)) {
+    const msg = err instanceof Error ? err.message : String(err ?? "");
+    if (/429|quota|rate.?limit|RESOURCE_EXHAUSTED|exhausted/i.test(msg)) {
       return {
         ok: false,
         error:
-          "AI quota exceeded — your Gemini key currently has no free-tier quota. Enable billing on its Google Cloud project, or switch AI providers.",
+          "AI quota exceeded — your Gemini key has no free-tier quota. Enable billing on its Google Cloud project, or make sure GROQ_API_KEY is also set as a fallback.",
+      };
+    }
+    if (/PERMISSION_DENIED|location is not supported|not available in your (country|region)|SERVICE_DISABLED/i.test(msg)) {
+      return {
+        ok: false,
+        error:
+          "Gemini is not available in your region. The app will use Groq — make sure GROQ_API_KEY is set in your environment.",
+      };
+    }
+    if (/API.?key.*(not valid|invalid)|invalid.?API.?key/i.test(msg)) {
+      return {
+        ok: false,
+        error: "Your Gemini API key is invalid. Check GEMINI_API_KEY in your environment settings.",
       };
     }
     return {
       ok: false,
-      error: "We couldn't analyze this meeting. Please try again in a moment.",
+      error: "AI analysis failed. Please try again in a moment.",
     };
   }
 
