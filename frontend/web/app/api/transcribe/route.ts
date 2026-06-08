@@ -27,11 +27,14 @@ export async function POST(req: Request) {
     if (file.size > 25 * 1024 * 1024) {
       return NextResponse.json({ error: "Audio exceeds 25MB limit." }, { status: 413 });
     }
+    // Optional ISO 639-1 language hint from the client (e.g. "ta" for Tamil).
+    // When set, it seeds the Whisper decoder to prevent mis-decoding as English.
+    const languageHint = (form.get("language") as string | null) || undefined;
     // Stage 1: Whisper → raw text in the original language.
-    const { text, language } = await transcribeAudio(file);
+    const { text, language } = await transcribeAudio(file, { language: languageHint });
     // Stage 2: LLM cleans it into a polished, speaker-labeled transcript
     // (same language). Falls back to raw text if refinement is unavailable.
-    const refined = await refineTranscript(text);
+    const refined = await refineTranscript(text, language ?? languageHint);
     return NextResponse.json({ text: refined, language });
   } catch (err) {
     console.error("transcribe error", err);
