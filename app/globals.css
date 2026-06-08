@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Meeting-to-Tasks — "ink on warm paper".
+  Warm tinted neutrals (OKLCH), one ember accent, restrained.
+  Tokens stored as `L C H` triplets, consumed via oklch(var(--x) / <alpha>).
+*/
+@layer base {
+  :root {
+    --background: 0.989 0.005 85;
+    --foreground: 0.24 0.012 70;
+
+    --subtle: 0.967 0.007 85;
+    --card: 0.997 0.003 85;
+    --card-foreground: 0.24 0.012 70;
+    --popover: 0.998 0.002 85;
+    --popover-foreground: 0.24 0.012 70;
+
+    --primary: 0.26 0.014 65;
+    --primary-foreground: 0.985 0.004 85;
+
+    --secondary: 0.945 0.008 80;
+    --secondary-foreground: 0.32 0.012 68;
+
+    --muted: 0.955 0.007 80;
+    --muted-foreground: 0.552 0.014 68;
+
+    --accent: 0.95 0.009 78;
+    --accent-foreground: 0.26 0.013 66;
+
+    --ember: 0.62 0.135 52;
+    --ember-foreground: 0.99 0.004 85;
+
+    --destructive: 0.55 0.19 27;
+    --destructive-foreground: 0.99 0.004 27;
+    --success: 0.52 0.09 152;
+    --success-foreground: 0.99 0.004 150;
+    --warning: 0.64 0.13 58;
+    --warning-foreground: 0.99 0.004 85;
+
+    --border: 0.905 0.008 78;
+    --input: 0.885 0.01 78;
+    --ring: 0.62 0.135 52;
+
+    --radius: 0.6rem;
+  }
+
+  .dark {
+    --background: 0.185 0.008 75;
+    --foreground: 0.95 0.005 85;
+
+    --subtle: 0.21 0.008 75;
+    --card: 0.215 0.009 75;
+    --card-foreground: 0.95 0.005 85;
+    --popover: 0.2 0.009 75;
+    --popover-foreground: 0.95 0.005 85;
+
+    --primary: 0.96 0.004 85;
+    --primary-foreground: 0.2 0.01 75;
+
+    --secondary: 0.27 0.009 75;
+    --secondary-foreground: 0.93 0.005 85;
+
+    --muted: 0.27 0.009 75;
+    --muted-foreground: 0.7 0.012 80;
+
+    --accent: 0.3 0.01 75;
+    --accent-foreground: 0.95 0.005 85;
+
+    --ember: 0.68 0.14 55;
+    --ember-foreground: 0.18 0.01 75;
+
+    --destructive: 0.58 0.18 27;
+    --destructive-foreground: 0.99 0.004 27;
+    --success: 0.62 0.1 152;
+    --success-foreground: 0.16 0.01 152;
+    --warning: 0.7 0.13 58;
+    --warning-foreground: 0.18 0.01 75;
+
+    --border: 0.3 0.008 75;
+    --input: 0.33 0.009 75;
+    --ring: 0.68 0.14 55;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring/45 ring-offset-2 ring-offset-background;
+  }
+  ::selection {
+    background: oklch(var(--ember) / 0.18);
+  }
+  /* Tabular figures for anything that reads as data. */
+  .tnum {
+    font-feature-settings: "tnum", "cv11";
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Marker highlight — an ember swipe behind a key word.
+     Background gradient on inline text (NOT gradient text). */
+  .hl {
+    background-image: linear-gradient(
+      to top,
+      oklch(var(--ember) / 0.26) 0%,
+      oklch(var(--ember) / 0.26) 38%,
+      transparent 38%
+    );
+    padding: 0 0.06em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  /* iOS/Android safe areas (notch + home indicator) for the native shell. */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .h-safe-bottom {
+    height: env(safe-area-inset-bottom);
+  }
+  /* Bottom-nav clearance: iOS tab bar (52px) + safe area + a little breathing room. */
+  .pb-mobilenav {
+    padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
+  }
+  /* Fade + rise entrance — ease-out-expo, no bounce (per DESIGN.md). */
+  .animate-rise {
+    animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  /* Fine paper rule. */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, oklch(var(--border) / 0.6) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(var(--border) / 0.6) 1px, transparent 1px);
+    background-size: 64px 64px;
+    -webkit-mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, #000 35%, transparent 100%);
+    mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, #000 35%, transparent 100%);
+  }
+  .skeleton-shimmer::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(90deg, transparent, oklch(var(--foreground) / 0.05), transparent);
+    animation: shimmer 1.6s infinite;
+  }
+}
+
+/* Refined warm scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(var(--border)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: oklch(var(--border));
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(var(--muted-foreground) / 0.45);
+}

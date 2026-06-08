@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body {
+        width: 300px; margin: 0;
+        font-family: Inter, -apple-system, system-ui, sans-serif;
+        color: #16181d; background: #fff;
+      }
+      .head { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid #eceef1; }
+      .mark { width: 22px; height: 22px; border-radius: 6px; background: #16181d; display: grid; place-items: center; color: #fff; font-size: 12px; }
+      .title { font-size: 14px; font-weight: 600; }
+      .body { padding: 16px; }
+      .status { font-size: 12.5px; color: #6b7280; margin-bottom: 12px; }
+      .status b { color: #16181d; font-weight: 600; }
+      .btn { display: block; width: 100%; text-align: center; text-decoration: none; padding: 9px; border-radius: 9px; font-size: 13px; font-weight: 600; }
+      .primary { background: #16181d; color: #fff; }
+      .ghost { color: #16181d; margin-top: 8px; }
+      .hint { font-size: 11.5px; color: #9ca3af; margin-top: 12px; line-height: 1.5; }
+    </style>
+  </head>
+  <body>
+    <div class="head">
+      <div class="mark">✓</div>
+      <div class="title">Meeting-to-Tasks</div>
+    </div>
+    <div class="body">
+      <div class="status" id="status">Checking for a meeting…</div>
+      <a class="btn primary" id="open" href="#" target="_blank">Open workspace</a>
+      <a class="btn ghost" id="signin" href="#" target="_blank">Sign in to the app</a>
+      <p class="hint">
+        Join a Zoom or Google Meet call and the floating panel appears automatically.
+        Sign in to the web app once — the extension reuses your session.
+      </p>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+# Supabase CLI project config for Meeting-to-Tasks.
+# Regenerate/extend with `supabase init` if you upgrade the CLI.
+# Docs: https://supabase.com/docs/guides/cli/config
+
+project_id = "aftermeet"
+
+[db]
+# Local dev Postgres (only used by `supabase start`). Prod uses your cloud project.
+port = 54322
+major_version = 15
+
+[db.migrations]
+# Apply files in supabase/migrations/* in filename order.
+schema_paths = []
+
+[studio]
+enabled = true
+port = 54323
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000

@@ -1,0 +1,44 @@
+# Render Blueprint for Aftermeet (Next.js full-stack: web UI + server actions +
+# API routes). Deploy: Render Dashboard → New → Blueprint → pick this repo.
+# Secrets (sync: false) are entered once in the Render dashboard, never committed.
+services:
+  - type: web
+    name: aftermeet
+    runtime: node
+    plan: free # upgrade to "starter" to avoid cold-start spin-down
+    region: oregon # pick the region closest to your Supabase project
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20.18.0"
+      # ── Database (Supabase) ─────────────────────────────────────
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      # ── Auth ────────────────────────────────────────────────────
+      - key: NEXTAUTH_SECRET
+        sync: false
+      - key: NEXTAUTH_URL # set to your Render URL, e.g. https://aftermeet.onrender.com
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      # ── AI providers ────────────────────────────────────────────
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: GROQ_STT_MODEL
+        value: whisper-large-v3-turbo
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      # ── Public ──────────────────────────────────────────────────
+      - key: NEXT_PUBLIC_APP_URL # same as your Render URL
+        sync: false

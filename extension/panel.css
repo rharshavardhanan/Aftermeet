@@ -1,0 +1,100 @@
+/* Floating panel — warm charcoal, ember accent. Compact, native, recedes over
+   a bright call. Mirrors the web app's "ink on paper", inverted for glance use. */
+#m2t-panel {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2147483647;
+  width: 304px;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  color: oklch(0.93 0.005 85);
+  background: oklch(0.2 0.009 75);
+  border: 1px solid oklch(1 0 0 / 0.08);
+  border-radius: 16px;
+  box-shadow: 0 16px 50px -12px oklch(0.1 0.01 70 / 0.65);
+  overflow: hidden;
+  animation: m2t-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes m2t-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+#m2t-panel * { box-sizing: border-box; }
+
+.m2t-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 13px;
+  cursor: grab;
+  border-bottom: 1px solid oklch(1 0 0 / 0.06);
+  background: oklch(1 0 0 / 0.02);
+}
+.m2t-header:active { cursor: grabbing; }
+.m2t-brand { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+.m2t-platform {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+  color: oklch(1 0 0 / 0.4);
+}
+.m2t-dot { width: 8px; height: 8px; border-radius: 50%; background: oklch(1 0 0 / 0.22); }
+.m2t-dot.m2t-live { background: oklch(0.68 0.14 55); animation: m2t-pulse 1.6s ease-in-out infinite; }
+@keyframes m2t-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.m2t-body { padding: 13px; }
+.m2t-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
+.m2t-timer {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums; font-size: 19px; font-weight: 600; letter-spacing: -0.02em;
+}
+
+.m2t-btn {
+  border: 0; border-radius: 10px; padding: 9px 13px;
+  font-size: 12.5px; font-weight: 600; cursor: pointer; letter-spacing: -0.005em;
+  transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s, background 0.15s;
+}
+.m2t-btn:active { transform: scale(0.97); }
+.m2t-btn-primary { background: oklch(0.96 0.004 85); color: oklch(0.2 0.01 75); }
+.m2t-btn-primary:hover { opacity: 0.92; }
+.m2t-btn-stop { background: oklch(0.58 0.18 27); color: #fff; }
+.m2t-btn:disabled { opacity: 0.55; cursor: default; }
+
+.m2t-section-label {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.14em;
+  color: oklch(1 0 0 / 0.38); margin: 13px 0 7px;
+}
+.m2t-transcript {
+  font-size: 12px; line-height: 1.6; color: oklch(1 0 0 / 0.72);
+  max-height: 98px; overflow-y: auto;
+  background: oklch(1 0 0 / 0.04); border-radius: 10px; padding: 9px 11px;
+}
+.m2t-tasks { display: flex; flex-direction: column; gap: 6px; max-height: 168px; overflow-y: auto; }
+.m2t-empty, .m2t-error { font-size: 12px; color: oklch(1 0 0 / 0.4); padding: 4px 0; }
+.m2t-error { color: oklch(0.72 0.12 27); }
+.m2t-task {
+  display: flex; gap: 9px; align-items: flex-start;
+  background: oklch(1 0 0 / 0.04); border-radius: 10px; padding: 8px 10px;
+  transition: background 0.15s;
+}
+.m2t-task:hover { background: oklch(1 0 0 / 0.07); }
+.m2t-check {
+  width: 14px; height: 14px; border-radius: 50%; margin-top: 1px; flex: 0 0 auto;
+  border: 1.5px solid oklch(0.68 0.14 55 / 0.6);
+}
+.m2t-task-title { font-size: 12.5px; font-weight: 500; line-height: 1.4; }
+.m2t-task-meta {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px; color: oklch(1 0 0 / 0.45); margin-top: 2px;
+}
+.m2t-open-meeting { display: block; margin-top: 6px; font-size: 12px; color: oklch(0.7 0.13 55); text-decoration: none; }
+.m2t-open-meeting:hover { text-decoration: underline; }
+
+.m2t-footer { padding: 10px 13px; border-top: 1px solid oklch(1 0 0 / 0.06); font-size: 11.5px; }
+.m2t-footer a { color: oklch(1 0 0 / 0.5); text-decoration: none; transition: color 0.15s; }
+.m2t-footer a:hover { color: oklch(0.96 0.004 85); }
+
+.m2t-transcript::-webkit-scrollbar, .m2t-tasks::-webkit-scrollbar { width: 6px; }
+.m2t-transcript::-webkit-scrollbar-thumb, .m2t-tasks::-webkit-scrollbar-thumb {
+  background: oklch(1 0 0 / 0.15); border-radius: 999px;
+}
