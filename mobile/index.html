@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Meeting-to-Tasks</title>
+    <style>
+      :root { color-scheme: light; }
+      html, body {
+        margin: 0; height: 100%;
+        background: oklch(0.988 0.006 80);
+        color: oklch(0.235 0.012 65);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        height: 100dvh; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 16px;
+        padding: 24px; text-align: center;
+      }
+      .mark {
+        width: 56px; height: 56px; border-radius: 14px;
+        background: oklch(0.62 0.142 52); color: #fff;
+        display: grid; place-items: center; font-weight: 700; font-size: 24px;
+      }
+      h1 { font-size: 19px; font-weight: 600; margin: 4px 0 0; letter-spacing: -0.01em; }
+      p { margin: 0; max-width: 30ch; color: oklch(0.55 0.013 68); font-size: 14px; line-height: 1.5; }
+      .dot { width: 7px; height: 7px; border-radius: 50%; background: oklch(0.62 0.142 52); animation: pulse 1.2s ease-in-out infinite; }
+      @keyframes pulse { 0%,100% { opacity: .3 } 50% { opacity: 1 } }
+    </style>
+  </head>
+  <body>
+    <!--
+      This is the Capacitor offline fallback. In production the native shell loads
+      the live deployment set via CAP_SERVER_URL (see capacitor.config.ts), so this
+      page only shows when the device is offline or the server URL is unset.
+    -->
+    <div class="wrap">
+      <div class="mark">M</div>
+      <h1>Meeting-to-Tasks</h1>
+      <p>Connecting to your workspace…</p>
+      <div class="dot"></div>
+    </div>
+  </body>
+</html>
