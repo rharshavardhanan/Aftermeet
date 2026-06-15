@@ -3,6 +3,15 @@
 Aftermeet ships **three client surfaces** that all talk to **one backend**.
 The backend is the source of truth; every client is a thin frontend over it.
 
+> **Migration in progress (2026-06):** the backend is being extracted from the
+> Next.js monolith into a standalone **NestJS** service at `backend/api/`
+> (deployed separately on Render), with the Next.js app moving to frontend-only
+> on Vercel and **Supabase Auth (bearer JWT)** replacing NextAuth. This is a
+> strangler migration — see
+> `docs/superpowers/specs/2026-06-15-frontend-backend-split-design.md`. Phase 0
+> (current) adds the backend skeleton (`GET /health`) without moving any
+> endpoints yet.
+
 > **Repo layout.** Client code lives under `frontend/` (`frontend/web/` is the
 > Next.js app that *also* hosts the backend; `frontend/extension/` is the Chrome
 > extension). The shared data layer lives under `backend/` (`backend/prisma/`,
