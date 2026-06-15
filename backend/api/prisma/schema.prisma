@@ -1,0 +1,278 @@
+// Meeting-to-Tasks — data model (BACKEND API copy)
+// Synced copy of backend/prisma/schema.prisma kept local to the NestJS app so
+// `prisma generate` is deterministic. Keep in sync until Phase 7 decommissions
+// the monolith, after which this becomes the single source of truth.
+// Postgres (Supabase). Pooled URL for the app, direct URL for migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── Auth (NextAuth Prisma adapter) ────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ── Core domain ───────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+
+  onboardingCompleted Boolean @default(false)
+
+  accounts          Account[]
+  sessions          Session[]
+  memberships       Membership[]
+  meetings          Meeting[]
+  tasks             Task[]
+  extensionSessions ExtensionSession[]
+  activityLogs      ActivityLog[]
+  preference        UserPreference?
+}
+
+model UserPreference {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  // Onboarding answers
+  useCase   String? // freelance | agency | startup | student | sales | consulting
+  platforms String[] @default([]) // zoom | meet | teams | offline
+  priority  String?  // tasks | summaries | followups | mom
+  // App prefs
+  theme     String   @default("system") // system | light | dark
+  emailTone String   @default("professional")
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Workspace {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  createdAt   DateTime     @default(now())
+  memberships Membership[]
+  meetings    Meeting[]
+  billing     Billing?
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Membership {
+  id          String        @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        WorkspaceRole @default(OWNER)
+  createdAt   DateTime      @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+enum MeetingSource {
+  PASTE
+  UPLOAD
+  RECORDING
+  EXTENSION
+}
+
+enum MeetingStatus {
+  DRAFT
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Meeting {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  title       String        @default("Untitled meeting")
+  source      MeetingSource @default(PASTE)
+  status      MeetingStatus @default(DRAFT)
+  meetingDate DateTime      @default(now())
+  durationSec Int?
+  participants String[]     @default([])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transcript Transcript?
+  aiOutput   AiOutput?
+  tasks      Task[]
+
+  @@index([workspaceId, meetingDate])
+  @@index([userId, status])
+}
+
+model Transcript {
+  id          String   @id @default(cuid())
+  meetingId   String   @unique
+  rawText     String   @db.Text
+  language    String   @default("en")
+  wordCount   Int      @default(0)
+  speakerMap  Json? // { "Speaker 1": "Alex", ... }
+  createdAt   DateTime @default(now())
+
+  meeting Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  chunks  TranscriptChunk[]
+}
+
+model TranscriptChunk {
+  id           String  @id @default(cuid())
+  transcriptId String
+  index        Int
+  speaker      String  @default("Speaker 1")
+  text         String  @db.Text
+  startMs      Int?
+  endMs        Int?
+
+  transcript Transcript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+
+  @@index([transcriptId, index])
+}
+
+model AiOutput {
+  id          String   @id @default(cuid())
+  meetingId   String   @unique
+  model       String
+  summary     String   @db.Text
+  decisions   Json     @default("[]")
+  risks       Json     @default("[]")
+  deadlines   Json     @default("[]")
+  followupEmail String @default("") @db.Text
+  mom         Json? // structured Meeting Minutes
+  tokensUsed  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+  ARCHIVED
+}
+
+enum TaskUrgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Task {
+  id          String      @id @default(cuid())
+  meetingId   String
+  userId      String
+  title       String
+  assignee    String?
+  dueDate     DateTime?
+  urgency     TaskUrgency @default(MEDIUM)
+  status      TaskStatus  @default(OPEN)
+  confidence  Float       @default(0.5)
+  sourceQuote String?     @db.Text
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([meetingId])
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+model Billing {
+  id                   String   @id @default(cuid())
+  workspaceId          String   @unique
+  plan                 Plan     @default(FREE)
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  stripePriceId        String?
+  currentPeriodEnd     DateTime?
+  meetingsUsed         Int      @default(0)
+  meetingsLimit        Int      @default(10)
+  updatedAt            DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model ExtensionSession {
+  id          String    @id @default(cuid())
+  userId      String
+  platform    String    @default("meet") // zoom | meet | teams
+  tabUrl      String?
+  status      String    @default("active") // active | ended
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+  meetingId   String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
