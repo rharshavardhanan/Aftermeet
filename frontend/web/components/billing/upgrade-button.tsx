@@ -4,16 +4,15 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { createCheckoutViaApi } from "@/lib/api-client";
 
 export function UpgradeButton({ disabled }: { disabled?: boolean }) {
   const [pending, start] = useTransition();
   function upgrade() {
     start(async () => {
       try {
-        const res = await fetch("/api/stripe/checkout", { method: "POST" });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? "Could not start checkout");
-        window.location.href = json.url;
+        const { url } = await createCheckoutViaApi();
+        window.location.href = url;
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Checkout failed");
       }

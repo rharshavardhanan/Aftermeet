@@ -148,3 +148,35 @@ export async function fetchLanguages(
   if (!res.ok) throw new Error("Failed to load languages");
   return (await res.json()) as LanguageOption[];
 }
+
+/** Start a Stripe Checkout session; returns the hosted checkout URL. */
+export async function createCheckoutViaApi(
+  base: string = DEFAULT_BASE,
+  fetchImpl: FetchLike = fetch,
+): Promise<{ url: string }> {
+  const res = await backendFetch("/billing/checkout", { method: "POST" }, base, fetchImpl);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? "Could not start checkout");
+  return json as { url: string };
+}
+
+/** Export a meeting's minutes to a Google Doc; returns the doc URL. */
+export async function exportDocViaApi(
+  meetingId: string,
+  base: string = DEFAULT_BASE,
+  fetchImpl: FetchLike = fetch,
+): Promise<{ url?: string }> {
+  const res = await backendFetch(
+    "/google/export-doc",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ meetingId }),
+    },
+    base,
+    fetchImpl,
+  );
+  const json = (await res.json().catch(() => ({}))) as { url?: string; message?: string; error?: string };
+  if (!res.ok) throw new Error(json.message ?? json.error ?? "Couldn't export to Google Docs");
+  return json;
+}

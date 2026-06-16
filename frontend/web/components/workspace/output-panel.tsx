@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { momToMarkdown, momToHtml, downloadText, printToPdf } from "@/lib/export";
+import { exportDocViaApi } from "@/lib/api-client";
 import type { Mom } from "@/lib/ai/schema";
 
 interface Decision { decision: string; rationale: string | null; confidence: number }
@@ -52,23 +53,14 @@ export function OutputPanel({ data, meetingId }: { data: OutputData; meetingId?:
     setExporting(true);
     const t = toast.loading("Creating your Google Doc…");
     try {
-      const res = await fetch("/api/google/export-doc", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ meetingId }),
-      });
-      const body = (await res.json().catch(() => ({}))) as { url?: string; message?: string };
-      if (!res.ok) {
-        toast.error(body.message ?? "Couldn't export to Google Docs", { id: t });
-        return;
-      }
+      const body = await exportDocViaApi(meetingId);
       toast.success("Minutes exported to Google Docs", {
         id: t,
         description: "Opening your document…",
       });
       if (body.url) window.open(body.url, "_blank", "noopener,noreferrer");
-    } catch {
-      toast.error("Couldn't reach Google. Check your connection and try again.", { id: t });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't export to Google Docs", { id: t });
     } finally {
       setExporting(false);
     }
