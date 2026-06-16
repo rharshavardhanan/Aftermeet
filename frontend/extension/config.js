@@ -1,13 +1,15 @@
-// Shared config for the extension. Point APP_ORIGIN at your deployment.
-export const APP_ORIGIN = "http://localhost:4000";
-export const API = {
-  transcribe: `${APP_ORIGIN}/api/transcribe`,
-  process: `${APP_ORIGIN}/api/extension/process`,
-  session: `${APP_ORIGIN}/api/extension/session`,
+// Default config for the extension. Runtime values are stored in
+// chrome.storage.local and edited in the popup:
+//   appOrigin — the Next.js web app (login + /extension/connect + workspace links)
+//   apiBase   — the standalone NestJS backend the extension calls
+//   token     — Bearer token pasted from the /extension/connect page
+//   language  — last-selected spoken language for transcription
+//
+// content.js and popup.js read these directly from chrome.storage.local with the
+// same defaults; this file documents the contract.
+export const DEFAULTS = {
+  appOrigin: "http://localhost:4000",
+  apiBase: "http://localhost:4001",
+  token: "",
+  language: "",
 };
-
-// Auth strategy: the extension reuses the web app's NextAuth session cookie.
-// Because requests to APP_ORIGIN are same-origin to the cookie, `credentials:
-// "include"` carries the session. The user signs in once in the web app; the
-// extension piggybacks on that session. No separate token store required.
-export const FETCH_OPTS = { credentials: "include" };

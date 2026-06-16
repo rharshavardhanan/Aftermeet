@@ -48,6 +48,13 @@
   font-variant-numeric: tabular-nums; font-size: 19px; font-weight: 600; letter-spacing: -0.02em;
 }
 
+.m2t-lang {
+  appearance: none; -webkit-appearance: none;
+  border: 1px solid oklch(0.3 0.008 75); border-radius: 8px;
+  background: transparent; color: inherit; cursor: pointer;
+  font-size: 11.5px; font-weight: 500; padding: 5px 8px; max-width: 96px;
+}
+
 .m2t-btn {
   border: 0; border-radius: 10px; padding: 9px 13px;
   font-size: 12.5px; font-weight: 600; cursor: pointer; letter-spacing: -0.005em;

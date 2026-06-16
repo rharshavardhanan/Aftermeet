@@ -7,5 +7,6 @@ import { AiModule } from '../ai/ai.module';
   imports: [AiModule],
   controllers: [MeetingsController],
   providers: [MeetingsService],
+  exports: [MeetingsService],
 })
 export class MeetingsModule {}
