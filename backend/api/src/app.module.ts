@@ -10,6 +10,7 @@ import { TranscriptionModule } from './transcription/transcription.module';
 import { ExtensionModule } from './extension/extension.module';
 import { BillingModule } from './billing/billing.module';
 import { GoogleModule } from './google/google.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { GoogleModule } from './google/google.module';
     ExtensionModule,
     BillingModule,
     GoogleModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}
