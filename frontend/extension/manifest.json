@@ -28,7 +28,9 @@
     "https://meet.google.com/*",
     "https://*.zoom.us/*",
     "http://localhost:4000/*",
-    "https://*.vercel.app/*"
+    "http://localhost:4001/*",
+    "https://*.vercel.app/*",
+    "https://*.onrender.com/*"
   ],
   "content_scripts": [
     {

@@ -9,8 +9,8 @@ import {
   ArrowUpRight,
   Sparkles,
 } from "lucide-react";
-import { auth, getCurrentWorkspace } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { serverApi } from "@/lib/server-api";
 import { PageHeader } from "@/components/app/page-header";
 import { TaskRow, type TaskRowData } from "@/components/app/task-row";
 import { EmptyState } from "@/components/empty-state";
@@ -21,40 +21,36 @@ import { formatRelative, cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
+interface DashTask {
+  id: string;
+  title: string;
+  assignee: string | null;
+  dueDate: string | null;
+  urgency: "LOW" | "MEDIUM" | "HIGH";
+  status: "OPEN" | "DONE" | "ARCHIVED";
+  confidence: number;
+  sourceQuote: string | null;
+  meeting: { title: string };
+}
+interface DashMeeting {
+  id: string;
+  title: string;
+  meetingDate: string;
+  source: string;
+  _count: { tasks: number };
+}
+interface DashboardData {
+  stats: { meetingsTotal: number; openCount: number; completedTasks: number; productivity: number };
+  openTasks: DashTask[];
+  upcoming: { id: string; title: string; dueDate: string | null }[];
+  recentMeetings: DashMeeting[];
+}
+
 export default async function DashboardPage() {
   const session = await auth();
-  const userId = session!.user.id;
-  const workspace = await getCurrentWorkspace(userId);
-
-  const [recentMeetings, openTasks, counts, completedTasks, upcoming] = await Promise.all([
-    prisma.meeting.findMany({
-      where: { userId },
-      orderBy: { meetingDate: "desc" },
-      take: 5,
-      include: { _count: { select: { tasks: true } } },
-    }),
-    prisma.task.findMany({
-      where: { userId, status: "OPEN" },
-      orderBy: [{ urgency: "desc" }, { createdAt: "desc" }],
-      take: 6,
-      include: { meeting: { select: { title: true } } },
-    }),
-    prisma.$transaction([
-      prisma.meeting.count({ where: { userId } }),
-      prisma.task.count({ where: { userId, status: "OPEN" } }),
-      prisma.task.count({ where: { userId } }),
-    ]),
-    prisma.task.count({ where: { userId, status: "DONE" } }),
-    prisma.task.findMany({
-      where: { userId, status: "OPEN", dueDate: { not: null } },
-      orderBy: { dueDate: "asc" },
-      take: 4,
-      include: { meeting: { select: { title: true } } },
-    }),
-  ]);
-
-  const [meetingsTotal, openCount, totalTasks] = counts;
-  const productivity = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+  const data = await serverApi<DashboardData>("/dashboard");
+  const { recentMeetings, openTasks, upcoming } = data;
+  const { meetingsTotal, openCount, completedTasks, productivity } = data.stats;
 
   const stats = [
     { label: "Meetings", value: meetingsTotal, icon: FileText },
@@ -63,11 +59,11 @@ export default async function DashboardPage() {
     { label: "Productivity", value: `${productivity}%`, icon: Gauge },
   ];
 
-  const toRow = (t: (typeof openTasks)[number]): TaskRowData => ({
+  const toRow = (t: DashTask): TaskRowData => ({
     id: t.id,
     title: t.title,
     assignee: t.assignee,
-    dueDate: t.dueDate?.toISOString() ?? null,
+    dueDate: t.dueDate,
     urgency: t.urgency,
     status: t.status,
     confidence: t.confidence,

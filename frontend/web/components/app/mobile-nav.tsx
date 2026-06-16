@@ -6,9 +6,10 @@ import { House, Clock, SquarePen, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isImmersiveRoute } from "./nav-routes";
 
-// Flat iOS-style tab bar. Tabs move between sections; "New" is the primary
-// action, tinted ember but inline (no floating FAB — that's a Material pattern).
-// "Extension" is intentionally absent: Chrome extensions don't exist on mobile.
+// iOS-style floating liquid-glass tab bar. A frosted, rounded pill hovers above
+// the home indicator; a glass capsule slides between tabs with iOS easing — the
+// "liquid" selection feel. "New" is the primary action (ember). "Extension" is
+// intentionally absent: Chrome extensions don't exist on mobile.
 type Tab = {
   href: string;
   label: string;
@@ -23,6 +24,10 @@ const tabs: Tab[] = [
   { href: "/settings", label: "Settings", icon: Settings2 },
 ];
 
+// Per-tab width in px — the sliding capsule is exactly one tab wide and is
+// translated by activeIndex * TAB_W, so this must match the Link width (w-16).
+const TAB_W = 64;
+
 function isActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -32,21 +37,32 @@ export function MobileNav() {
   const pathname = usePathname();
   if (isImmersiveRoute(pathname)) return null;
 
+  const activeIndex = tabs.findIndex((t) => isActive(pathname, t.href));
+
   return (
     <nav
       aria-label="Primary"
-      className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/75 backdrop-blur-2xl md:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)_+_0.75rem)] z-40 flex justify-center md:hidden"
     >
-      <div className="mx-auto flex h-[52px] max-w-md items-stretch">
+      <div className="liquid-glass pointer-events-auto relative flex rounded-[24px] p-1.5">
+        {/* Sliding liquid-glass selection capsule. */}
+        <span
+          aria-hidden
+          className={cn(
+            "ease-ios absolute bottom-1.5 left-1.5 top-1.5 rounded-[18px] transition-transform duration-500",
+            activeIndex < 0 ? "opacity-0" : "glass-pill opacity-100",
+          )}
+          style={{ width: TAB_W, transform: `translateX(${Math.max(activeIndex, 0) * TAB_W}px)` }}
+        />
+
         {tabs.map((t) => {
           const active = isActive(pathname, t.href);
-          // The "New" tab reads as primary: ember when active, ember-muted when not.
           const tint = t.primary
             ? active
               ? "text-ember"
-              : "text-ember/70"
+              : "text-ember/75"
             : active
-              ? "text-ember"
+              ? "text-foreground"
               : "text-muted-foreground";
           return (
             <Link
@@ -54,11 +70,11 @@ export function MobileNav() {
               href={t.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-1 pt-1 transition-opacity active:opacity-50",
+                "relative z-10 flex h-14 w-16 flex-col items-center justify-center gap-1 transition-transform active:scale-90",
                 tint,
               )}
             >
-              <t.icon className="size-[26px]" strokeWidth={active || t.primary ? 2.1 : 1.9} />
+              <t.icon className="size-[24px]" strokeWidth={active || t.primary ? 2.2 : 1.9} />
               <span className="text-[10px] font-medium leading-none tracking-tight">{t.label}</span>
             </Link>
           );

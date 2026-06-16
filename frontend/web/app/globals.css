@@ -111,6 +111,49 @@
 }
 
 @layer components {
+  /* ── iOS-style liquid glass ────────────────────────────────────
+     Frosted material for floating navigation chrome: a translucent
+     base, heavy backdrop blur + saturation, and a specular top edge.
+     Used only on nav/overlay surfaces — content stays on warm paper. */
+  .liquid-glass {
+    background: oklch(var(--card) / 0.6);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    border: 1px solid oklch(var(--foreground) / 0.08);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.55) inset,
+      0 10px 34px -10px oklch(var(--foreground) / 0.26),
+      0 2px 8px -2px oklch(var(--foreground) / 0.12);
+  }
+  .dark .liquid-glass {
+    background: oklch(var(--card) / 0.5);
+    border-color: oklch(1 0 0 / 0.1);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.14) inset,
+      0 12px 34px -8px oklch(0 0 0 / 0.55);
+  }
+  /* No-backdrop-filter fallback: lean opaque so text stays legible. */
+  @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .liquid-glass {
+      background: oklch(var(--card) / 0.94);
+    }
+    .dark .liquid-glass {
+      background: oklch(var(--card) / 0.92);
+    }
+  }
+
+  /* The sliding selection capsule inside a glass bar (iPhone tab feel). */
+  .glass-pill {
+    background: oklch(var(--foreground) / 0.06);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.5) inset,
+      0 1px 3px 0 oklch(var(--foreground) / 0.12);
+  }
+  .dark .glass-pill {
+    background: oklch(1 0 0 / 0.1);
+    box-shadow: 0 1px 0 0 oklch(1 0 0 / 0.14) inset;
+  }
+
   /* Marker highlight — an ember swipe behind a key word.
      Background gradient on inline text (NOT gradient text). */
   .hl {
@@ -147,6 +190,17 @@
   .pb-mobilenav {
     padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
   }
+  /* iOS system easing — smooth, decisive, no cartoon bounce. Used for the
+     liquid-glass tab indicator so it glides between tabs like iOS. */
+  .ease-ios {
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ease-ios {
+      transition-duration: 0.01ms !important;
+    }
+  }
+
   /* Fade + rise entrance — ease-out-expo, no bounce (per DESIGN.md). */
   .animate-rise {
     animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
