@@ -3,6 +3,32 @@
 Aftermeet ships **three client surfaces** that all talk to **one backend**.
 The backend is the source of truth; every client is a thin frontend over it.
 
+> **Migration status (2026-06).** The backend has been extracted into a
+> standalone **NestJS** service at `backend/api/` (Render), with the Next.js app
+> as the frontend (Vercel). Auth bridges the existing NextAuth+Google login via a
+> short-lived HS256 app JWT (`/api/token` → backend `JwtAuthGuard`), shared
+> `API_JWT_SECRET`. Spec: `docs/superpowers/specs/2026-06-15-frontend-backend-split-design.md`.
+>
+> **Done & on the backend** (all bearer-guarded, 19 e2e tests):
+> auth/`/me`, meetings (list/get/delete/**process** = full AI pipeline), tasks,
+> **transcription** (`/transcribe` + `/languages`, 45-language two-tier Whisper/Gemini
+> with full `large-v3` for non-English), extension (`/extension/process` + `/session`),
+> billing (Stripe checkout + raw-body webhook), Google Docs export.
+>
+> **Frontend write paths repointed** to the backend (create meeting, transcribe,
+> task toggle, checkout, export). Reads still render server-side from the shared
+> Supabase DB on the monolith — seamless because both hit the same database.
+>
+> **Remaining cutover (needs live login + the real Vercel/Render deploy):**
+> 1. Repoint server-rendered reads (dashboard/history/workspace/settings/billing)
+>    to the backend via a server-side token client.
+> 2. Repoint the topbar extension-status poll to `<backend>/extension/session`.
+> 3. After (1)+(2) verify in a logged-in session, delete the now-superseded
+>    monolith routes: `app/api/{transcribe,extension/*,stripe/*,google/export-doc}`
+>    and `app/actions/{meetings,tasks}` (keep `app/api/auth/*` and `app/api/token`).
+> 4. Point the Stripe webhook at `<backend>/billing/webhook`; set the backend
+>    Render env vars (see `backend/api/.env.example`).
+
 > **Repo layout.** Client code lives under `frontend/` (`frontend/web/` is the
 > Next.js app that *also* hosts the backend; `frontend/extension/` is the Chrome
 > extension). The shared data layer lives under `backend/` (`backend/prisma/`,

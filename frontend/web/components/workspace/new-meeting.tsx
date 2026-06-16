@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Sparkles, Upload, Mic, Square, Loader2, FileText, Clipboard, MonitorSpeaker, Globe } from "lucide-react";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useRecorder, formatClock } from "@/hooks/use-recorder";
-import { processMeeting } from "@/app/actions/meetings";
+import { processMeetingViaApi, transcribeViaApi, fetchLanguages } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 const SAMPLE = `Alex: Thanks everyone for joining. Main goal today is to lock the Q3 launch.
@@ -22,7 +22,7 @@ Marco: Yes, I'll have it done by Wednesday.
 Sarah: I'll also loop in design on the launch assets.
 Alex: Great. Let's review progress in our sync on Monday.`;
 
-const LANGUAGES = [
+const FALLBACK_LANGUAGES = [
   { code: "", label: "Auto-detect" },
   { code: "ta", label: "Tamil" },
   { code: "hi", label: "Hindi" },
@@ -54,8 +54,27 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
   const [transcribing, setTranscribing] = useState(false);
   const [captureMode, setCaptureMode] = useState<"mic" | "system">("mic");
   const [language, setLanguage] = useState("");
+  const [languages, setLanguages] = useState(FALLBACK_LANGUAGES);
   const fileRef = useRef<HTMLInputElement>(null);
   const recorder = useRecorder();
+
+  // Load the full 45-language set from the backend; keep the static list as a
+  // fallback if the backend is unreachable.
+  useEffect(() => {
+    let alive = true;
+    fetchLanguages()
+      .then((list) => {
+        if (!alive) return;
+        setLanguages([
+          { code: "", label: "Auto-detect" },
+          ...list.map((l) => ({ code: l.code, label: l.label })),
+        ]);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   async function transcribeBlob(file: File) {
     setTranscribing(true);
@@ -63,9 +82,7 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
       const form = new FormData();
       form.append("audio", file);
       if (language) form.append("language", language);
-      const res = await fetch("/api/transcribe", { method: "POST", body: form });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Transcription failed");
+      const json = await transcribeViaApi(form);
       setTranscript((t) => (t ? `${t}\n${json.text}` : json.text));
       setTab("paste");
       toast.success("Transcribed. Review and generate.");
@@ -101,17 +118,16 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
       return;
     }
     startTransition(async () => {
-      const res = await processMeeting({
-        title: title || undefined,
-        transcript,
-        source: tab === "record" ? "RECORDING" : tab === "upload" ? "UPLOAD" : "PASTE",
-        participants: [],
-      });
-      if (res.ok) {
+      try {
+        const { meetingId } = await processMeetingViaApi({
+          title: title || undefined,
+          transcript,
+          source: tab === "record" ? "RECORDING" : tab === "upload" ? "UPLOAD" : "PASTE",
+        });
         toast.success("Meeting analyzed.");
-        router.push(`/workspace/${res.data.meetingId}`);
-      } else {
-        toast.error(res.error);
+        router.push(`/workspace/${meetingId}`);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Analysis failed. Please try again.");
       }
     });
   }
@@ -149,7 +165,7 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
                   className="bg-transparent text-xs text-foreground border-0 outline-none cursor-pointer hover:text-foreground/70"
                   title="Spoken language — helps with non-English audio"
                 >
-                  {LANGUAGES.map((l) => (
+                  {languages.map((l) => (
                     <option key={l.code} value={l.code}>{l.label}</option>
                   ))}
                 </select>

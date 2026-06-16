@@ -43,3 +43,27 @@ services:
       # ── Public ──────────────────────────────────────────────────
       - key: NEXT_PUBLIC_APP_URL # same as your Render URL
         sync: false
+
+  # Standalone NestJS backend (Phase 0 of the frontend/backend split). Deploys
+  # from backend/api/. The frontend talks to it via NEXT_PUBLIC_API_BASE_URL.
+  - type: web
+    name: aftermeet-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend/api
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20.18.0"
+      - key: PORT
+        value: "4001"
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: CORS_ORIGINS # set to your Vercel frontend origin once deployed
+        sync: false
