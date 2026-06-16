@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { extractionSchema, extractionJsonSchema, Extraction } from './schema';
 import { SYSTEM_PROMPT, buildUserPrompt } from './prompt';
 import { withRetry } from './retry';
+import { withTimeout, AI_TIMEOUT_MS } from './timeout';
 import {
   openai,
   OPENAI_MODEL,
@@ -125,7 +126,11 @@ You MUST return a single JSON object that conforms exactly to this JSON Schema (
 ${JSON.stringify(extractionJsonSchema.schema)}`,
       generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
     });
-    const res = await model.generateContent(userPrompt);
+    const res = await withTimeout(
+      model.generateContent(userPrompt),
+      AI_TIMEOUT_MS,
+      'gemini extraction',
+    );
     const raw = res.response.text();
     if (!raw) throw new Error('Empty response from model');
     const parsed = extractionSchema.parse(JSON.parse(raw));

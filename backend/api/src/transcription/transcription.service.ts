@@ -13,6 +13,7 @@ import {
   isQuotaError,
 } from '../ai/providers';
 import { LANG_BY_CODE, LangSpec } from './languages';
+import { withTimeout, AI_TIMEOUT_MS, TRANSCRIBE_TIMEOUT_MS } from '../ai/timeout';
 
 const GEMINI_INLINE_MAX_BYTES = 18 * 1024 * 1024;
 const REFINE_MAX_CHARS = 40_000;
@@ -95,7 +96,8 @@ export class TranscriptionService {
     const model = gemini().getGenerativeModel({ model: GEMINI_MODEL });
     const langName = meta?.label;
     const instruction = langName ? `The primary language is ${langName}. ` : '';
-    const res = await model.generateContent([
+    const res = await withTimeout(
+      model.generateContent([
       {
         text:
           `${instruction}Transcribe this meeting audio verbatim in the ORIGINAL spoken language(s). ` +
@@ -106,7 +108,10 @@ export class TranscriptionService {
           "'Speaker 1:'. Output only the transcript text — no preamble, no commentary.",
       },
       { inlineData: { mimeType: file.mimetype || 'audio/webm', data: base64 } },
-    ]);
+      ]),
+      TRANSCRIBE_TIMEOUT_MS,
+      'gemini transcription',
+    );
     const text = res.response.text()?.trim();
     if (!text) throw new Error('Transcription returned no text.');
     return { text, language };
@@ -156,7 +161,11 @@ Produce a clean, faithful transcript:
       systemInstruction: prompt,
       generationConfig: { temperature: 0.2 },
     });
-    const res = await model.generateContent(text);
+    const res = await withTimeout(
+      model.generateContent(text),
+      AI_TIMEOUT_MS,
+      'gemini refine',
+    );
     return res.response.text()?.trim() || text;
   }
 
