@@ -37,7 +37,7 @@ export function Topbar({
   }
 
   return (
-    <header className="pt-safe sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md">
+    <header className="pt-safe sticky top-0 z-30 border-b border-foreground/[0.07] bg-background/70 backdrop-blur-xl backdrop-saturate-150">
       <div className="flex h-14 items-center gap-3 px-4 md:px-6">
         {/* Mobile brand mark — no sidebar on mobile, so identity lives here. */}
         <Link href="/dashboard" className="flex items-center gap-2 md:hidden">

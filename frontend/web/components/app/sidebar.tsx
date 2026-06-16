@@ -42,7 +42,7 @@ export function Sidebar() {
         className={cn(
           "group flex h-9 items-center gap-3 rounded-md px-2.5 text-sm transition-colors duration-150",
           active
-            ? "bg-secondary font-medium text-foreground"
+            ? "glass-pill font-medium text-foreground"
             : "text-muted-foreground hover:bg-accent hover:text-foreground",
           collapsed && "justify-center px-0",
         )}
