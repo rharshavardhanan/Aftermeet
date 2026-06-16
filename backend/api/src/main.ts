@@ -17,7 +17,9 @@ function parseCorsOrigins(): (string | RegExp)[] {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // rawBody: true preserves the raw request buffer for Stripe webhook signature
+  // verification (req.rawBody) while still parsing JSON for normal routes.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   app.enableCors({
     origin: parseCorsOrigins(),
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
