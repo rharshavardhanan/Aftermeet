@@ -28,7 +28,16 @@ point**, using a strangler (incremental) migration.
 | Backend framework | **NestJS** on Render | Production-standard structured Node backend (DI, modules, guards, validation, Swagger) |
 | Frontend host | **Next.js on Vercel** (frontend-only) | Framework-native |
 | Database | **Supabase Postgres** via Prisma (unchanged) | Already in use |
-| Auth | **Supabase Auth (Google → JWT)**, `Authorization: Bearer <JWT>` | Production-standard for a split API; cleanly solves cross-origin + extension auth (no `SameSite` cookie hacks). Supersedes the earlier "fix cookie-sharing" idea once the API is a separate origin. |
+| Auth | **App JWT bridge** (NextAuth+Google → HS256 JWT → backend guard), `Authorization: Bearer <JWT>` | See deviation note below. |
+
+> **Auth deviation (2026-06-16):** the spec originally specified Supabase Auth.
+> In practice only Supabase **Postgres** + **NextAuth/Google** were provisioned
+> (no Supabase Auth project/anon key/provider). To complete the split without an
+> external blocker, Phase 1 bridges the existing NextAuth+Google login: the
+> frontend mints a short-lived HS256 app JWT at `/api/token` (signed with the
+> shared `API_JWT_SECRET`); the NestJS `JwtAuthGuard` verifies it. The guard
+> interface is identical to what Supabase/JWKS verification would expose, so this
+> can be swapped to Supabase Auth later by changing only `TokenService`.
 | Brand direction | Keep ink-on-paper; glass accents are a later project | User choice |
 
 ## Target architecture
