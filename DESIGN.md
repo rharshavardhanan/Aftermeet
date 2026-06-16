@@ -39,6 +39,15 @@ serif reserved for formal-record moments. OKLCH throughout.
 - Tabular numerals for all metrics. Tracked small-caps section labels.
 - Motion: ease-out-expo, fade+rise entrances. No bounce. Never animate layout props.
 
+## Signature details
+- **Liquid glass (navigation chrome only):** floating frosted bars use
+  `.liquid-glass` (translucent + backdrop-blur/saturate + specular top edge). The
+  mobile tab bar is a floating rounded pill with an iOS-eased sliding selection
+  capsule (`.glass-pill` + `.ease-ios`). Reserved for nav/overlay surfaces —
+  never content. This is a deliberate, scoped exception to the glass ban below.
+
 ## Bans (enforced)
-No side-stripe borders, no gradient text, no decorative glass, no hero-metric
-template, no identical card grids, no modal-first. See impeccable shared laws.
+No side-stripe borders, no gradient text, **no decorative glass on content
+surfaces** (frosted liquid glass is allowed only on floating navigation chrome —
+see Signature details), no hero-metric template, no identical card grids, no
+modal-first. See impeccable shared laws.
