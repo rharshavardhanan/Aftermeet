@@ -8,6 +8,8 @@ import { MeetingsModule } from './meetings/meetings.module';
 import { TasksModule } from './tasks/tasks.module';
 import { TranscriptionModule } from './transcription/transcription.module';
 import { ExtensionModule } from './extension/extension.module';
+import { BillingModule } from './billing/billing.module';
+import { GoogleModule } from './google/google.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { ExtensionModule } from './extension/extension.module';
     TasksModule,
     TranscriptionModule,
     ExtensionModule,
+    BillingModule,
+    GoogleModule,
   ],
 })
 export class AppModule {}
