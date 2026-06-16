@@ -7,7 +7,11 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 let openaiClient: OpenAI | null = null;
 export function openai(): OpenAI {
   if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set');
-  openaiClient ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  openaiClient ??= new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    timeout: 60_000,
+    maxRetries: 2,
+  });
   return openaiClient;
 }
 export const OPENAI_MODEL = process.env.OPENAI_MODEL ?? 'gpt-4o-2024-11-20';
@@ -20,6 +24,8 @@ export function groq(): OpenAI {
   groqClient ??= new OpenAI({
     apiKey: process.env.GROQ_API_KEY,
     baseURL: 'https://api.groq.com/openai/v1',
+    timeout: 120_000,
+    maxRetries: 2,
   });
   return groqClient;
 }
