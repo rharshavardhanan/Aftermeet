@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, Circle, Clock, User, Quote } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn, confidenceMeta, formatDate } from "@/lib/utils";
-import { toggleTaskDone } from "@/app/actions/tasks";
+import { setTaskDoneViaApi } from "@/lib/api-client";
 
 export interface TaskRowData {
   id: string;
@@ -21,6 +22,7 @@ export interface TaskRowData {
 const urgencyTone = { HIGH: "destructive", MEDIUM: "warning", LOW: "muted" } as const;
 
 export function TaskRow({ task, showQuote = false }: { task: TaskRowData; showQuote?: boolean }) {
+  const router = useRouter();
   const [done, setDone] = useState(task.status === "DONE");
   const [, startTransition] = useTransition();
   const conf = confidenceMeta(task.confidence);
@@ -28,8 +30,13 @@ export function TaskRow({ task, showQuote = false }: { task: TaskRowData; showQu
   function toggle() {
     const nextDone = !done;
     setDone(nextDone); // optimistic
-    startTransition(() => {
-      toggleTaskDone(task.id, nextDone);
+    startTransition(async () => {
+      try {
+        await setTaskDoneViaApi(task.id, nextDone);
+        router.refresh(); // refresh server-rendered counts
+      } catch {
+        setDone(!nextDone); // revert on failure
+      }
     });
   }
 

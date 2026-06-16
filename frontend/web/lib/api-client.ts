@@ -69,3 +69,82 @@ export async function getMe(
   if (!res.ok) throw new Error(`/me failed: ${res.status}`);
   return (await res.json()) as MeResponse;
 }
+
+// ── Domain write-path helpers (browser-side; backend is the source of truth) ──
+
+export interface ProcessMeetingInput {
+  title?: string;
+  transcript: string;
+  source?: "PASTE" | "UPLOAD" | "RECORDING" | "EXTENSION";
+  participants?: string[];
+}
+
+/** Run a transcript through the backend AI pipeline; returns the new meeting id. */
+export async function processMeetingViaApi(
+  input: ProcessMeetingInput,
+  base: string = DEFAULT_BASE,
+  fetchImpl: FetchLike = fetch,
+): Promise<{ meetingId: string }> {
+  const res = await backendFetch(
+    "/meetings",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+    base,
+    fetchImpl,
+  );
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? "Processing failed");
+  return json as { meetingId: string };
+}
+
+/** Upload audio for transcription. `form` must carry `audio` (+ optional `language`). */
+export async function transcribeViaApi(
+  form: FormData,
+  base: string = DEFAULT_BASE,
+  fetchImpl: FetchLike = fetch,
+): Promise<{ text: string; language: string | null }> {
+  // Do NOT set Content-Type — the browser sets the multipart boundary.
+  const res = await backendFetch("/transcribe", { method: "POST", body: form }, base, fetchImpl);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? "Transcription failed");
+  return json as { text: string; language: string | null };
+}
+
+/** Mark a task done / not-done. */
+export async function setTaskDoneViaApi(
+  id: string,
+  done: boolean,
+  base: string = DEFAULT_BASE,
+  fetchImpl: FetchLike = fetch,
+): Promise<void> {
+  const res = await backendFetch(
+    `/tasks/${id}/done`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ done }),
+    },
+    base,
+    fetchImpl,
+  );
+  if (!res.ok) throw new Error("Update failed");
+}
+
+export interface LanguageOption {
+  code: string;
+  label: string;
+  whisper: boolean;
+}
+
+/** Supported transcription languages from the backend (45-language two-tier set). */
+export async function fetchLanguages(
+  base: string = DEFAULT_BASE,
+  fetchImpl: FetchLike = fetch,
+): Promise<LanguageOption[]> {
+  const res = await backendFetch("/languages", {}, base, fetchImpl);
+  if (!res.ok) throw new Error("Failed to load languages");
+  return (await res.json()) as LanguageOption[];
+}
