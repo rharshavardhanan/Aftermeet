@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Sparkles, Upload, Mic, Square, Loader2, FileText, Clipboard, MonitorSpeaker, Globe } from "lucide-react";
+import { Sparkles, Upload, Mic, Square, Loader2, FileText, Clipboard, MonitorSpeaker } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { LanguageSheet } from "@/components/workspace/language-sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -158,21 +159,9 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
               <TabsTrigger value="upload"><Upload className="mr-1.5 size-3.5" /> Upload</TabsTrigger>
               <TabsTrigger value="record"><Mic className="mr-1.5 size-3.5" /> Record</TabsTrigger>
             </TabsList>
-            {/* Language hint — only relevant for audio tabs */}
+            {/* Language hint — only relevant for audio tabs (iOS action sheet) */}
             {tab !== "paste" && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Globe className="size-3.5 shrink-0" />
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className="cursor-pointer border-0 bg-transparent text-xs text-foreground outline-none transition-colors hover:text-ember"
-                  title="Spoken language — helps with non-English audio"
-                >
-                  {languages.map((l) => (
-                    <option key={l.code} value={l.code}>{l.label}</option>
-                  ))}
-                </select>
-              </div>
+              <LanguageSheet value={language} options={languages} onChange={setLanguage} />
             )}
           </div>
 

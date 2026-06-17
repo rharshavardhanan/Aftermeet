@@ -91,6 +91,11 @@ const config: Config = {
           from: { opacity: "0", transform: "translate(-50%, -48%) scale(0.96)" },
           to: { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
         },
+        // iOS bottom-sheet present.
+        "slide-up": {
+          from: { transform: "translateY(100%)" },
+          to: { transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.24s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -100,6 +105,7 @@ const config: Config = {
         "rise": "rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both",
         "pulse-ember": "pulse-ember 1.6s ease-in-out infinite",
         "scale-in": "scale-in 0.32s cubic-bezier(0.32, 0.72, 0, 1) both",
+        "slide-up": "slide-up 0.34s cubic-bezier(0.32, 0.72, 0, 1) both",
       },
     },
   },
