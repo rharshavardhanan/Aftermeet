@@ -14,11 +14,6 @@ function parse(raw: string) {
     });
 }
 
-const palette = [
-  "text-foreground",
-  "text-foreground",
-];
-
 export function TranscriptPanel({ raw, wordCount }: { raw: string; wordCount: number }) {
   const turns = useMemo(() => parse(raw), [raw]);
   const speakers = useMemo(
@@ -28,26 +23,33 @@ export function TranscriptPanel({ raw, wordCount }: { raw: string; wordCount: nu
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+      <div className="liquid-glass z-10 flex items-center justify-between rounded-none border-x-0 border-t-0 px-4 py-3">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
             Transcript
           </p>
-          <p className="text-xs text-muted-foreground">
-            {wordCount} words{speakers.length ? ` · ${speakers.length} speakers` : ""}
+          <p className="font-mono text-xs text-muted-foreground">
+            <span className="tabular-nums text-foreground/70">{wordCount}</span> words
+            {speakers.length ? (
+              <>
+                {" "}
+                <span className="text-muted-foreground/50">·</span>{" "}
+                <span className="tabular-nums text-foreground/70">{speakers.length}</span> speakers
+              </>
+            ) : null}
           </p>
         </div>
         <CopyButton value={raw} />
       </div>
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 text-[13px] leading-relaxed">
+      <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-4 text-[13px] leading-relaxed">
         {turns.map((t, i) => (
-          <div key={i}>
+          <div key={i} className="text-pretty">
             {t.speaker && (
-              <span className={`mr-2 font-medium ${palette[speakers.indexOf(t.speaker) % palette.length]}`}>
+              <span className="mr-2 font-display font-semibold tracking-tight text-foreground">
                 {t.speaker}
               </span>
             )}
-            <span className="text-foreground/80">{t.text}</span>
+            <span className="text-foreground/85">{t.text}</span>
           </div>
         ))}
       </div>

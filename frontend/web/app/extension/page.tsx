@@ -22,28 +22,30 @@ const steps = [
   {
     icon: MousePointerClick,
     title: "Join a meeting",
-    body: "Open Zoom or Google Meet. A quiet floating panel appears — hit Start AI Notes and you're capturing.",
+    body: "Open Zoom or Google Meet. A quiet floating panel appears — hit Start AI Notes and it begins transcribing.",
   },
 ];
 
 export default function ExtensionPage() {
   return (
     <div className="min-h-dvh">
-      <header className="container flex items-center justify-between py-5">
-        <Link href="/"><Logo /></Link>
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/dashboard"><ArrowLeft className="size-4" /> Back to app</Link>
-        </Button>
-      </header>
+      <div className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-3">
+        <header className="liquid-glass flex h-14 w-full max-w-3xl items-center justify-between rounded-full px-2 py-2 pl-4">
+          <Link href="/"><Logo /></Link>
+          <Button asChild variant="ghost" size="sm" className="rounded-full">
+            <Link href="/dashboard"><ArrowLeft className="size-4" /> Back to app</Link>
+          </Button>
+        </header>
+      </div>
 
-      <section className="container max-w-3xl py-12 text-center">
-        <Badge variant="outline" className="mb-5 rounded-full">
+      <section className="container max-w-3xl pb-12 pt-32 text-center">
+        <Badge variant="ember" className="mb-5 rounded-full">
           <Chrome className="size-3.5" /> Manifest V3 · Chrome
         </Badge>
-        <h1 className="text-balance text-4xl font-semibold tracking-tight">
-          Live AI notes, inside every call.
+        <h1 className="font-display text-balance text-[clamp(2.4rem,6vw,3.75rem)] font-semibold leading-[0.98] tracking-[-0.03em]">
+          Live AI notes, inside every <span className="hl">call</span>.
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-balance text-muted-foreground">
+        <p className="mx-auto mt-5 max-w-xl text-balance text-muted-foreground text-pretty">
           The Aftermeet extension detects Zoom and Google Meet, captures the audio, transcribes
           live, and builds your tasks and minutes while you stay in the conversation.
         </p>
@@ -61,18 +63,18 @@ export default function ExtensionPage() {
         </div>
       </section>
 
-      <section id="install" className="container max-w-4xl pb-12 scroll-mt-20">
+      <section id="install" className="container max-w-4xl scroll-mt-24 pb-12">
         <div className="grid gap-4 md:grid-cols-3">
           {steps.map((s, i) => (
-            <Card key={s.title}>
+            <Card key={s.title} className="hover-lift">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex size-9 items-center justify-center rounded-lg border border-border bg-subtle">
-                    <s.icon className="size-[18px]" />
+                  <div className="glass-pill flex size-9 items-center justify-center rounded-lg text-ember">
+                    <s.icon className="size-[18px]" strokeWidth={1.75} />
                   </div>
-                  <span className="font-mono text-sm text-muted-foreground">0{i + 1}</span>
+                  <span className="font-mono text-sm tabular-nums text-muted-foreground">0{i + 1}</span>
                 </div>
-                <h3 className="mt-4 text-[15px] font-semibold tracking-tight">{s.title}</h3>
+                <h3 className="mt-4 font-display text-[16px] font-semibold tracking-tight">{s.title}</h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
               </CardContent>
             </Card>
@@ -83,18 +85,21 @@ export default function ExtensionPage() {
       <section className="container max-w-3xl pb-24">
         <Card>
           <CardContent className="p-7">
-            <h2 className="text-lg font-semibold tracking-tight">What it captures</h2>
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            <p className="mb-3 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="inline-block h-px w-8 bg-ember" /> Inside the panel
+            </p>
+            <h2 className="font-display text-xl font-semibold tracking-tight">What it captures</h2>
+            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
               {[
                 "Tab audio from Zoom & Google Meet",
                 "Optional microphone capture",
                 "Live transcript with speaker labels",
                 "Progressive task extraction",
-                "Final Meeting Minutes on end",
+                "Final meeting minutes on end",
                 "Secure sync to your workspace",
               ].map((i) => (
                 <li key={i} className="flex items-center gap-2.5 text-sm">
-                  <Check className="size-4 text-success" /> {i}
+                  <Check className="size-4 shrink-0 text-success" strokeWidth={2.25} /> {i}
                 </li>
               ))}
             </ul>

@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
   Plus,
   ListChecks,
-  CalendarClock,
+  CircleCheck,
   Gauge,
   FileText,
   ArrowUpRight,
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
   const stats = [
     { label: "Meetings", value: meetingsTotal, icon: FileText },
     { label: "Open tasks", value: openCount, icon: ListChecks },
-    { label: "Completed", value: completedTasks, icon: CalendarClock },
+    { label: "Completed", value: completedTasks, icon: CircleCheck },
     { label: "Productivity", value: `${productivity}%`, icon: Gauge },
   ];
 
@@ -72,10 +72,10 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="container max-w-6xl space-y-8 py-8">
+    <div className="container max-w-6xl space-y-8 py-8 animate-rise">
       <PageHeader
         title={`Good ${greeting()}${session?.user.name ? `, ${session.user.name.split(" ")[0]}` : ""}`}
-        description="Here's what needs your attention."
+        description="Here's what needs your attention today."
         actions={
           <Button asChild>
             <Link href="/workspace">
@@ -85,25 +85,27 @@ export default async function DashboardPage() {
         }
       />
 
-      {/* stat ledger */}
-      <div className="grid grid-cols-2 divide-border overflow-hidden rounded-xl border border-border bg-card [&>*]:border-border sm:grid-cols-4">
+      {/* stat ledger — one glass panel, hairline-divided like a record */}
+      <div className="liquid-glass grid grid-cols-2 overflow-hidden rounded-2xl sm:grid-cols-4">
         {stats.map((s, i) => (
           <div
             key={s.label}
             className={cn(
               "p-5",
-              i % 2 === 1 && "border-l",
-              i >= 2 && "border-t sm:border-t-0",
-              i > 0 && "sm:border-l",
+              i % 2 === 1 && "border-l border-border/70",
+              i >= 2 && "border-t border-border/70 sm:border-t-0",
+              i > 0 && "sm:border-l sm:border-border/70",
             )}
           >
             <div className="flex items-center gap-2 text-muted-foreground">
-              <s.icon className="size-3.5" strokeWidth={1.75} />
+              <span className="glass-pill flex size-6 items-center justify-center rounded-lg text-ember">
+                <s.icon className="size-3.5" strokeWidth={1.75} />
+              </span>
               <span className="font-mono text-[11px] uppercase tracking-[0.14em]">{s.label}</span>
             </div>
             <p
               className={cn(
-                "mt-3 text-3xl font-semibold tracking-[-0.02em] tnum",
+                "mt-3 font-display text-3xl font-semibold tracking-[-0.02em] tnum",
                 i === 3 && "text-ember",
               )}
             >
@@ -117,8 +119,11 @@ export default async function DashboardPage() {
         {/* Pending action items */}
         <Card className="lg:col-span-2">
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Pending action items</CardTitle>
-            <Link href="/history" className="text-sm text-muted-foreground hover:text-foreground">
+            <CardTitle className="font-display text-base">Pending action items</CardTitle>
+            <Link
+              href="/history"
+              className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-foreground"
+            >
               View all
             </Link>
           </CardHeader>
@@ -127,7 +132,7 @@ export default async function DashboardPage() {
               <EmptyState
                 icon={ListChecks}
                 title="No open tasks"
-                description="Process a meeting and your action items will land here."
+                description="Process a meeting and your action items will land here, ready to clear."
                 action={
                   <Button asChild size="sm">
                     <Link href="/workspace">Start a meeting</Link>
@@ -142,15 +147,18 @@ export default async function DashboardPage() {
 
         {/* Side column */}
         <div className="space-y-6">
-          {/* AI insight */}
-          <Card className="border-ember/25 bg-ember/[0.04]">
+          {/* Today's read */}
+          <Card className="border-ember/30">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="size-4 text-ember" /> AI insight
+              <CardTitle className="flex items-center gap-2 font-display text-base">
+                <span className="glass-pill flex size-6 items-center justify-center rounded-lg text-ember">
+                  <Sparkles className="size-3.5" />
+                </span>
+                Today&apos;s read
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm leading-relaxed text-muted-foreground">
+              <p className="text-sm leading-relaxed text-foreground/85">
                 {openCount > 0
                   ? `You have ${openCount} open ${openCount === 1 ? "task" : "tasks"}. ${
                       upcoming.length
@@ -165,16 +173,21 @@ export default async function DashboardPage() {
           {/* Upcoming follow-ups */}
           <Card>
             <CardHeader>
-              <CardTitle>Upcoming deadlines</CardTitle>
+              <CardTitle className="font-display text-base">Upcoming deadlines</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2.5">
+            <CardContent className="space-y-1">
               {upcoming.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">Nothing scheduled.</p>
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  No deadlines on the horizon.
+                </p>
               ) : (
                 upcoming.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between gap-2 text-sm">
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-foreground/[0.04]"
+                  >
                     <span className="truncate">{t.title}</span>
-                    <Badge variant="warning" className="shrink-0">
+                    <Badge variant="warning" className="shrink-0 font-mono">
                       {t.dueDate ? formatRelative(t.dueDate) : ""}
                     </Badge>
                   </div>
@@ -188,8 +201,11 @@ export default async function DashboardPage() {
       {/* Recent meetings */}
       <Card>
         <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Recent meetings</CardTitle>
-          <Link href="/history" className="text-sm text-muted-foreground hover:text-foreground">
+          <CardTitle className="font-display text-base">Recent meetings</CardTitle>
+          <Link
+            href="/history"
+            className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-foreground"
+          >
             History
           </Link>
         </CardHeader>
@@ -198,7 +214,7 @@ export default async function DashboardPage() {
             <EmptyState
               icon={FileText}
               title="No meetings yet"
-              description="Start your first AI meeting workspace — paste a transcript and watch it organize itself."
+              description="Paste your first transcript and watch it sort itself into tasks, decisions, and minutes."
               action={
                 <Button asChild size="sm">
                   <Link href="/workspace">
@@ -208,20 +224,20 @@ export default async function DashboardPage() {
               }
             />
           ) : (
-            <div className="divide-y divide-border">
+            <div className="space-y-1.5">
               {recentMeetings.map((m) => (
                 <Link
                   key={m.id}
                   href={`/workspace/${m.id}`}
-                  className="group flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
+                  className="hover-lift group flex items-center justify-between gap-4 rounded-xl px-3 py-3 hover:bg-foreground/[0.04]"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium group-hover:underline">{m.title}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="truncate text-sm font-medium tracking-tight">{m.title}</p>
+                    <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
                       {formatRelative(m.meetingDate)} · {m._count.tasks} tasks · {m.source.toLowerCase()}
                     </p>
                   </div>
-                  <ArrowUpRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                  <ArrowUpRight className="size-4 shrink-0 -translate-x-1 text-muted-foreground opacity-0 transition-all duration-300 ease-ios group-hover:translate-x-0 group-hover:text-ember group-hover:opacity-100" />
                 </Link>
               ))}
             </div>

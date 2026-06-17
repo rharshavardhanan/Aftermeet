@@ -66,18 +66,20 @@ export default async function MeetingView({ params }: { params: Promise<{ id: st
   return (
     <div className="flex h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] flex-col">
       {/* header */}
-      <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-3">
+      <div className="liquid-glass z-10 flex items-center justify-between gap-4 rounded-none border-x-0 border-t-0 px-5 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <Button asChild variant="ghost" size="icon" className="shrink-0">
-            <Link href="/history" aria-label="Back">
+            <Link href="/history" aria-label="Back to history">
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
           <div className="min-w-0">
-            <h1 className="truncate text-base font-semibold tracking-tight">{meeting.title}</h1>
-            <p className="text-xs text-muted-foreground">
-              {formatDate(meeting.meetingDate, { month: "long", day: "numeric", year: "numeric" })} ·{" "}
-              {meeting.source.toLowerCase()}
+            <h1 className="truncate font-display text-lg font-semibold tracking-[-0.01em]">
+              {meeting.title}
+            </h1>
+            <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+              {formatDate(meeting.meetingDate, { month: "long", day: "numeric", year: "numeric" })}{" "}
+              <span className="text-muted-foreground/50">·</span> {meeting.source.toLowerCase()}
             </p>
           </div>
         </div>
@@ -93,22 +95,27 @@ export default async function MeetingView({ params }: { params: Promise<{ id: st
           meeting.transcript ? (
             <TranscriptPanel raw={meeting.transcript.rawText} wordCount={meeting.transcript.wordCount} />
           ) : (
-            <div className="p-4 text-sm text-muted-foreground">No transcript stored.</div>
+            <div className="p-6 text-sm text-muted-foreground">
+              No transcript was stored for this meeting.
+            </div>
           )
         }
         output={
           output ? (
             <OutputPanel data={output} meetingId={id} />
           ) : (
-            <EmptyState title="Not yet processed" description="This meeting has no AI output." />
+            <EmptyState
+              title="Not yet processed"
+              description="This meeting has no record yet. Re-run it from history to extract tasks and minutes."
+            />
           )
         }
         tasks={
           openTasks.length === 0 ? (
             <EmptyState
               icon={ListChecks}
-              title="No tasks"
-              description="No action items were extracted from this meeting."
+              title="No action items"
+              description="Nothing actionable was found in this transcript. Re-run from history if the transcript has changed."
             />
           ) : (
             openTasks.map((t) => <TaskRow key={t.id} task={t} showQuote />)

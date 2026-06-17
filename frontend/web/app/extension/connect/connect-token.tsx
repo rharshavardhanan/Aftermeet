@@ -24,44 +24,56 @@ export function ConnectToken() {
   }
 
   return (
-    <div className="liquid-glass rounded-2xl p-7">
-      <div className="flex items-center gap-2.5">
-        <span className="grid size-9 place-items-center rounded-xl bg-foreground text-background">
-          <Chrome className="size-5" />
+    <div className="liquid-glass animate-rise rounded-2xl p-7">
+      <div className="flex items-center gap-3">
+        <span className="glass-pill grid size-10 place-items-center rounded-xl text-ember">
+          <Chrome className="size-5" strokeWidth={1.75} />
         </span>
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">Connect the extension</h1>
-          <p className="text-xs text-muted-foreground">Copy this token into the Aftermeet popup.</p>
+          <h1 className="font-display text-lg font-semibold tracking-tight">Connect the extension</h1>
+          <p className="text-xs text-muted-foreground">A short-lived token links this account to the extension.</p>
         </div>
       </div>
 
       {error ? (
-        <p className="mt-6 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive">{error}</p>
+        <p className="mt-6 rounded-xl bg-destructive/10 px-3.5 py-3 text-sm text-destructive">{error}</p>
       ) : !token ? (
         <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" /> Minting a secure token…
+          <Loader2 className="size-4 animate-spin text-ember" /> Minting a secure token…
         </div>
       ) : (
-        <>
+        <div className="animate-fade-in-sm">
+          <p className="mb-2 mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            Your token
+          </p>
           <textarea
             readOnly
             value={token}
             onFocus={(e) => e.currentTarget.select()}
-            className="mt-6 h-24 w-full resize-none rounded-lg border border-border bg-card/60 p-3 font-mono text-xs leading-relaxed"
+            className="h-24 w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] p-3 font-mono text-xs leading-relaxed"
           />
           <Button onClick={copy} className="mt-3 w-full gap-2">
             {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
             {copied ? "Copied" : "Copy token"}
           </Button>
-          <ol className="mt-5 space-y-1.5 text-xs text-muted-foreground">
-            <li>1. Copy the token above.</li>
-            <li>2. Open the Aftermeet extension popup.</li>
-            <li>3. Paste it into <span className="font-medium text-foreground">Connect token</span> and click Save.</li>
+          <ol className="mt-6 space-y-3 text-sm">
+            {[
+              "Copy the token above.",
+              "Open the Aftermeet extension popup.",
+              <>Paste it into <span className="font-medium text-foreground">Connect token</span> and click Save.</>,
+            ].map((step, i) => (
+              <li key={i} className="flex items-start gap-3 text-muted-foreground">
+                <span className="glass-pill mt-px grid size-5 shrink-0 place-items-center rounded-md font-mono text-[11px] tnum text-foreground">
+                  {i + 1}
+                </span>
+                <span className="leading-snug">{step}</span>
+              </li>
+            ))}
           </ol>
-          <p className="mt-4 text-[11px] text-muted-foreground">
-            The token is short-lived. If the extension stops working, just reconnect here.
+          <p className="mt-5 border-t border-foreground/[0.06] pt-4 text-xs text-foreground/70">
+            The token expires soon. If the extension stops working, reconnect here.
           </p>
-        </>
+        </div>
       )}
     </div>
   );

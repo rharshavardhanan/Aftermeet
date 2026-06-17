@@ -22,8 +22,9 @@ serif reserved for formal-record moments. OKLCH throughout.
 **Strategy:** Restrained (product) / restrained-committed (brand hero). Never `#000`/`#fff`.
 
 ## Typography
-- **Display (serif): Fraunces** — formal-record moments ONLY: landing hero, auth
-  aside, dashboard greeting, meeting + MoM titles. Optical sizing on, slight soft.
+- **Display: Schibsted Grotesk** (`font-display`) — record/title moments: landing
+  hero, page headers, meeting + MoM titles. A grotesk with newspaper/record
+  heritage — deliberately not a serif, not Inter.
 - **UI / body: Inter** — everything functional. Cap measure at 68ch.
 - **Metadata / numerals: JetBrains Mono** — timestamps, confidence %, counts (tabular).
 - Hierarchy via scale + weight (≥1.25 ratio). Tracked uppercase micro-labels (11px).
@@ -33,21 +34,25 @@ serif reserved for formal-record moments. OKLCH throughout.
   `subtle` (rest), `card` (hover lift), `float` (overlays).
 - Structure via hairline borders + spacing rhythm, not boxes-in-boxes.
 
-## Signature details
-- **Marker highlight** (`.hl`): ember swipe behind a key word (highlighted minutes
-  metaphor). Background gradient on inline text — NOT gradient text.
-- Tabular numerals for all metrics. Tracked small-caps section labels.
-- Motion: ease-out-expo, fade+rise entrances. No bounce. Never animate layout props.
-
-## Signature details
-- **Liquid glass (navigation chrome only):** floating frosted bars use
-  `.liquid-glass` (translucent + backdrop-blur/saturate + specular top edge). The
-  mobile tab bar is a floating rounded pill with an iOS-eased sliding selection
-  capsule (`.glass-pill` + `.ease-ios`). Reserved for nav/overlay surfaces —
-  never content. This is a deliberate, scoped exception to the glass ban below.
+## Signature details — "Liquid Dossier"
+The document/record is the soul (sharp, factual, legible); **liquid glass is the
+vessel**. Heavier iOS-26 glass on content surfaces, floating over a warm
+ink-on-paper canvas, but text contrast is never sacrificed for the effect.
+- **Ambient light-field:** `<body>` paints soft ember/amber blooms; frosted glass
+  refracts them. Pages stay transparent over it — no opaque page backgrounds.
+- **Glass tiers:** `.liquid-glass` (panels/cards/sections), `.liquid-glass-strong`
+  (dialogs, dropdowns, popovers), `.glass-pill` (chips, icon tiles, active toggles,
+  sliding selection capsules). Each: translucent + backdrop-blur/saturate +
+  specular top edge + soft shadow, with a no-`backdrop-filter` fallback.
+- **Marker highlight** (`.hl`): ember swipe behind a key word — background gradient
+  on inline text, NOT gradient text.
+- **Motion:** iOS spring (`.ease-ios`, `ease-spring`), `.hover-lift` on interactive
+  glass, dialog `scale-in`, fade+rise entrances. All reduced-motion safe. Never
+  animate layout props.
+- Tabular numerals (`font-mono`) for all metrics; tracked uppercase micro-labels.
 
 ## Bans (enforced)
-No side-stripe borders, no gradient text, **no decorative glass on content
-surfaces** (frosted liquid glass is allowed only on floating navigation chrome —
-see Signature details), no hero-metric template, no identical card grids, no
-modal-first. See impeccable shared laws.
+No side-stripe borders, no gradient text, no neon, no emoji, no hero-metric
+template, no identical card grids, no modal-first. Glass is the system, but it
+never lowers text contrast — body text stays solid ink on glass. See impeccable
+shared laws.

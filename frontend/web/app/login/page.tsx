@@ -12,54 +12,66 @@ export default async function LoginPage() {
   if (session?.user) redirect("/dashboard");
 
   return (
-    <div className="grid min-h-dvh lg:grid-cols-2">
-      {/* form */}
-      <div className="flex flex-col px-6 py-8">
+    <div className="relative flex min-h-dvh flex-col px-4 py-6 sm:px-6 sm:py-8">
+      <header className="flex items-center justify-between">
         <Link href="/" className="inline-flex">
           <Logo />
         </Link>
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-sm">
-            <h1 className="font-display text-3xl font-semibold tracking-[-0.02em]">Welcome back</h1>
-            <p className="mt-2.5 text-sm text-muted-foreground">
-              Sign in to turn your meetings into execution.
-            </p>
-            <div className="mt-8">
-              <GoogleSignIn />
-            </div>
-            <p className="mt-6 text-pretty text-xs text-muted-foreground">
-              By continuing you agree to our{" "}
-              <Link href="#" className="underline underline-offset-2">Terms</Link> and{" "}
-              <Link href="#" className="underline underline-offset-2">Privacy Policy</Link>.
-            </p>
-          </div>
-        </div>
-        <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Aftermeet</p>
-      </div>
+        <span className="hidden font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground sm:inline">
+          Sign in
+        </span>
+      </header>
 
-      {/* aside */}
-      <div className="relative hidden overflow-hidden border-l border-border bg-subtle/50 lg:block">
-        <div className="bg-grid absolute inset-0" />
-        <div className="relative flex h-full flex-col justify-between p-12">
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+      <main className="flex flex-1 items-center justify-center py-10">
+        <div className="liquid-glass animate-rise w-full max-w-md rounded-3xl p-8 sm:p-10">
+          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
             The record of every decision
           </span>
-          <figure className="max-w-md">
-            <blockquote className="font-display text-[28px] font-medium leading-[1.18] tracking-[-0.015em] text-balance">
-              “I stopped taking notes in meetings. The work just shows up afterward, already
-              <span className="hl"> organized</span>.”
+          <h1 className="mt-4 font-display text-3xl font-semibold tracking-[-0.02em] sm:text-[34px]">
+            Welcome back
+          </h1>
+          <p className="mt-2.5 text-pretty text-sm text-muted-foreground">
+            Sign in to turn your meetings into{" "}
+            <span className="hl">execution</span> — tasks, decisions, and minutes,
+            handled.
+          </p>
+
+          <div className="mt-8">
+            <GoogleSignIn />
+          </div>
+
+          <figure className="mt-9 border-t border-border/70 pt-6">
+            <blockquote className="font-display text-[17px] font-medium leading-[1.4] tracking-[-0.01em] text-balance">
+              “I stopped taking notes in meetings. The work just shows up afterward,
+              already organized.”
             </blockquote>
-            <figcaption className="mt-7 text-sm text-muted-foreground">
+            <figcaption className="mt-3 text-xs text-muted-foreground">
               Priya Nair · Head of Operations, Lumen
             </figcaption>
           </figure>
-          <div className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-            <span>Summaries</span>
-            <span>Action items</span>
-            <span>Minutes</span>
-          </div>
+
+          <p className="mt-8 text-pretty text-xs text-muted-foreground">
+            By continuing you agree to our{" "}
+            <Link href="#" className="text-foreground underline underline-offset-2">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="#" className="text-foreground underline underline-offset-2">
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </div>
-      </div>
+      </main>
+
+      <footer className="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+        <span>© {new Date().getFullYear()} Aftermeet</span>
+        <span className="hidden gap-5 sm:flex">
+          <span>Summaries</span>
+          <span>Action items</span>
+          <span>Minutes</span>
+        </span>
+      </footer>
     </div>
   );
 }

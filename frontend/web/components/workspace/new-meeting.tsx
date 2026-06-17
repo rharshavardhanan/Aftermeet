@@ -133,23 +133,26 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
   }
 
   return (
-    <Card className="p-0">
+    <Card className="animate-rise overflow-hidden p-0">
       <div className="border-b border-border p-5">
-        <Label htmlFor="title" className="text-xs text-muted-foreground">
+        <Label
+          htmlFor="title"
+          className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+        >
           Title (optional)
         </Label>
         <Input
           id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Q3 Roadmap Sync"
-          className="mt-1.5 border-0 px-0 text-base font-medium shadow-none focus-visible:ring-0"
+          placeholder="e.g. Q3 roadmap sync"
+          className="mt-1.5 border-0 bg-transparent px-0 font-display text-lg font-semibold tracking-tight shadow-none focus-visible:ring-0"
         />
       </div>
 
       <div className="p-5">
         <Tabs value={tab} onValueChange={(v) => setTab(v as Mode)}>
-          <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <TabsList>
               <TabsTrigger value="paste"><Clipboard className="mr-1.5 size-3.5" /> Paste</TabsTrigger>
               <TabsTrigger value="upload"><Upload className="mr-1.5 size-3.5" /> Upload</TabsTrigger>
@@ -162,7 +165,7 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="bg-transparent text-xs text-foreground border-0 outline-none cursor-pointer hover:text-foreground/70"
+                  className="cursor-pointer border-0 bg-transparent text-xs text-foreground outline-none transition-colors hover:text-ember"
                   title="Spoken language — helps with non-English audio"
                 >
                   {languages.map((l) => (
@@ -181,8 +184,16 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
               className="min-h-72 font-mono text-[13px] leading-relaxed"
             />
             <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-              <span>{transcript.split(/\s+/).filter(Boolean).length} words</span>
-              <button onClick={() => setTranscript(SAMPLE)} className="hover:text-foreground">
+              <span className="font-mono">
+                <span className="tabular-nums text-foreground/70">
+                  {transcript.split(/\s+/).filter(Boolean).length}
+                </span>{" "}
+                words
+              </span>
+              <button
+                onClick={() => setTranscript(SAMPLE)}
+                className="transition-colors hover:text-foreground"
+              >
                 Use sample transcript
               </button>
             </div>
@@ -192,17 +203,19 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
             <button
               onClick={() => fileRef.current?.click()}
               disabled={transcribing}
-              className="flex min-h-72 w-full flex-col items-center justify-center rounded-lg border border-dashed border-border bg-subtle/40 transition-colors hover:border-foreground/30"
+              className="flex min-h-72 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-border transition-colors hover:border-ember/40 disabled:cursor-wait"
             >
-              {transcribing ? (
-                <Loader2 className="size-6 animate-spin text-muted-foreground" />
-              ) : (
-                <FileText className="size-6 text-muted-foreground" />
-              )}
-              <p className="mt-3 text-sm font-medium">
-                {transcribing ? "Transcribing…" : "Click to upload"}
+              <span className="glass-pill flex size-12 items-center justify-center rounded-2xl">
+                {transcribing ? (
+                  <Loader2 className="size-5 motion-safe:animate-spin text-ember" />
+                ) : (
+                  <FileText className="size-5 text-ember" />
+                )}
+              </span>
+              <p className="mt-3.5 text-sm font-medium text-foreground">
+                {transcribing ? "Transcribing…" : "Click to upload a file"}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
                 .txt / .vtt / .srt transcript, or .mp3 / .m4a / .wav audio
               </p>
             </button>
@@ -216,41 +229,49 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
           </TabsContent>
 
           <TabsContent value="record">
-            <div className="flex min-h-72 flex-col items-center justify-center rounded-lg border border-border bg-subtle/40 p-4">
+            <div className="liquid-glass flex min-h-72 flex-col items-center justify-center rounded-xl p-4">
               {/* capture-source choice (hidden while recording) */}
               {recorder.state !== "recording" && (
-                <div className="mb-6 grid w-full max-w-sm grid-cols-2 gap-1 rounded-lg bg-muted/60 p-1">
+                <div className="mb-6 grid w-full max-w-sm grid-cols-2 gap-1 rounded-xl bg-foreground/[0.04] p-1">
                   <button
                     type="button"
                     onClick={() => setCaptureMode("mic")}
                     className={cn(
-                      "flex items-center justify-center gap-1.5 rounded-md py-2 text-[13px] font-medium transition-all active:scale-95",
-                      captureMode === "mic" ? "bg-card shadow-subtle" : "text-muted-foreground",
+                      "flex items-center justify-center gap-1.5 rounded-lg py-2 text-[13px] font-medium transition-all duration-300 ease-ios active:scale-95",
+                      captureMode === "mic" ? "glass-pill text-foreground" : "text-muted-foreground",
                     )}
                   >
-                    <Mic className="size-4" /> My mic
+                    <Mic className={cn("size-4", captureMode === "mic" && "text-ember")} /> My mic
                   </button>
                   <button
                     type="button"
                     onClick={() => setCaptureMode("system")}
                     className={cn(
-                      "flex items-center justify-center gap-1.5 rounded-md py-2 text-[13px] font-medium transition-all active:scale-95",
-                      captureMode === "system" ? "bg-card shadow-subtle" : "text-muted-foreground",
+                      "flex items-center justify-center gap-1.5 rounded-lg py-2 text-[13px] font-medium transition-all duration-300 ease-ios active:scale-95",
+                      captureMode === "system" ? "glass-pill text-foreground" : "text-muted-foreground",
                     )}
                   >
-                    <MonitorSpeaker className="size-4" /> Meeting audio
+                    <MonitorSpeaker className={cn("size-4", captureMode === "system" && "text-ember")} />{" "}
+                    Meeting audio
                   </button>
                 </div>
               )}
 
-              <div className="font-mono text-3xl tabular-nums tracking-tight">
+              {recorder.state === "recording" && (
+                <span className="mb-3 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ember">
+                  <span className="size-2 rounded-full bg-ember motion-safe:animate-pulse" />
+                  Recording
+                </span>
+              )}
+
+              <div className="font-mono text-4xl tabular-nums tracking-tight text-foreground">
                 {formatClock(recorder.seconds)}
               </div>
-              <p className="mt-2 max-w-xs text-center text-xs text-muted-foreground">
+              <p className="mt-2 max-w-xs text-center text-xs leading-relaxed text-muted-foreground">
                 {recorder.state === "recording"
-                  ? "Recording…"
+                  ? "Stop when you're done to transcribe automatically."
                   : captureMode === "system"
-                    ? "Captures the whole call (everyone). You'll pick the meeting tab and tick “Share tab audio”."
+                    ? 'Captures the whole call (everyone). You\'ll pick the meeting tab and tick "Share tab audio".'
                     : "Records your microphone — best for in-person meetings."}
               </p>
               <div className="mt-6">
@@ -273,19 +294,21 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
                 )}
               </div>
               {recorder.error && (
-                <p className="mt-3 max-w-sm text-center text-xs text-destructive">{recorder.error}</p>
+                <p className="mt-3 max-w-sm text-center text-xs leading-relaxed text-destructive">
+                  {recorder.error}
+                </p>
               )}
             </div>
           </TabsContent>
         </Tabs>
       </div>
 
-      <div className="flex items-center justify-between border-t border-border p-5">
-        <p className="text-xs text-muted-foreground">
-          The AI extracts tasks, decisions, and minutes — grounded in your transcript.
+      <div className="flex flex-col items-start gap-3 border-t border-border p-5 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Every task, decision, and line of the minutes is grounded in your transcript.
         </p>
-        <Button onClick={generate} disabled={pending || transcribing}>
-          {pending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+        <Button onClick={generate} disabled={pending || transcribing} className="w-full sm:w-auto">
+          {pending ? <Loader2 className="size-4 motion-safe:animate-spin" /> : <Sparkles className="size-4" />}
           {pending ? "Analyzing…" : "Generate"}
         </Button>
       </div>

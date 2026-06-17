@@ -40,7 +40,7 @@ export function MeetingPanels({
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Mobile segmented control */}
       <div className="border-b border-border p-2 lg:hidden">
-        <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted/60 p-1">
+        <div className="liquid-glass grid grid-cols-3 gap-1 rounded-xl p-1">
           {segments.map((s) => {
             const active = tab === s.key;
             return (
@@ -50,16 +50,17 @@ export function MeetingPanels({
                 onClick={() => setTab(s.key)}
                 aria-pressed={active}
                 className={cn(
-                  "flex items-center justify-center gap-1.5 rounded-md py-2 text-[13px] font-medium transition-all duration-150 active:scale-95",
-                  active
-                    ? "bg-card text-foreground shadow-subtle"
-                    : "text-muted-foreground",
+                  "flex items-center justify-center gap-1.5 rounded-lg py-2 text-[13px] font-medium transition-all duration-300 ease-ios active:scale-95",
+                  active ? "glass-pill text-foreground" : "text-muted-foreground",
                 )}
               >
-                <s.icon className={cn("size-4", active && "text-ember")} strokeWidth={active ? 2.25 : 1.75} />
+                <s.icon
+                  className={cn("size-4", active && "text-ember")}
+                  strokeWidth={active ? 2.25 : 1.75}
+                />
                 {s.label}
                 {s.badge ? (
-                  <span className="tnum text-[11px] text-muted-foreground">{s.badge}</span>
+                  <span className="font-mono tnum text-[11px] text-muted-foreground">{s.badge}</span>
                 ) : null}
               </button>
             );
@@ -86,9 +87,9 @@ export function MeetingPanels({
             hide("output"),
           )}
         >
-          <div className="hidden border-b border-border px-5 py-3 lg:block">
+          <div className="liquid-glass sticky top-0 z-10 hidden rounded-none border-x-0 border-t-0 px-5 py-3 lg:block">
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              AI output
+              The record
             </p>
           </div>
           <div className="p-4">{output}</div>
@@ -96,10 +97,13 @@ export function MeetingPanels({
 
         {/* tasks */}
         <div className={cn("min-h-0 flex-1 overflow-y-auto lg:flex-none", hide("tasks"))}>
-          <div className="hidden border-b border-border px-5 py-3 lg:block">
+          <div className="liquid-glass sticky top-0 z-10 hidden items-center gap-2 rounded-none border-x-0 border-t-0 px-5 py-3 lg:flex">
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Tasks
             </p>
+            {taskCount > 0 && (
+              <span className="font-mono tnum text-[11px] text-muted-foreground">{taskCount}</span>
+            )}
           </div>
           <div className="space-y-2.5 p-4">{tasks}</div>
         </div>
