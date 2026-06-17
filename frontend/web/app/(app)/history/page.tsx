@@ -37,13 +37,13 @@ export default async function HistoryPage({
   });
 
   return (
-    <div className="container max-w-6xl space-y-6 py-8">
+    <div className="container max-w-6xl space-y-6 py-8 animate-rise">
       <PageHeader
         title="History"
         description={
           q
             ? `${meetings.length} ${meetings.length === 1 ? "result" : "results"} for “${q}”`
-            : `${meetings.length} ${meetings.length === 1 ? "meeting" : "meetings"} processed`
+            : `${meetings.length} ${meetings.length === 1 ? "meeting" : "meetings"} on the record`
         }
         actions={
           <Button asChild>
@@ -60,8 +60,8 @@ export default async function HistoryPage({
           title={q ? "No matches" : "No meetings yet"}
           description={
             q
-              ? `Nothing matched “${q}”. Try a different term, or clear the search.`
-              : "Your processed meetings will appear here. Start with a transcript."
+              ? `Nothing matched “${q}”. Try a broader term, or clear the search.`
+              : "Your processed meetings land here as a searchable record. Start with a transcript."
           }
           action={
             <Button asChild size="sm">
@@ -81,22 +81,25 @@ export default async function HistoryPage({
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {meetings.map((m) => (
             <Link key={m.id} href={`/workspace/${m.id}`} className="group">
-              <Card className="h-full transition-all group-hover:border-foreground/25 group-hover:shadow-card">
+              <Card className="hover-lift h-full group-hover:border-ember/30">
                 <CardContent className="flex h-full flex-col p-5">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight">
+                    <h3 className="line-clamp-2 font-display text-[15px] font-semibold leading-snug tracking-tight">
                       {m.title}
                     </h3>
-                    <ArrowUpRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                    <ArrowUpRight className="size-4 shrink-0 -translate-x-1 text-muted-foreground opacity-0 transition-all duration-300 ease-ios group-hover:translate-x-0 group-hover:text-ember group-hover:opacity-100" />
                   </div>
-                  <p className="mt-2 line-clamp-3 flex-1 text-sm text-muted-foreground">
-                    {m.aiOutput?.summary ?? "No summary"}
+                  <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-muted-foreground">
+                    {m.aiOutput?.summary ?? "No summary yet."}
                   </p>
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground" title={formatDate(m.meetingDate)}>
+                  <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3">
+                    <span
+                      className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground"
+                      title={formatDate(m.meetingDate)}
+                    >
                       {formatRelative(m.meetingDate)}
                     </span>
-                    <Badge variant="muted" className="gap-1">
+                    <Badge variant="muted" className="gap-1 font-mono">
                       <ListChecks className="size-3" /> {m._count.tasks}
                     </Badge>
                   </div>

@@ -71,7 +71,9 @@ export function OutputPanel({ data, meetingId }: { data: OutputData; meetingId?:
       {/* Summary */}
       <Section id="summary" icon={FileText} title="Summary">
         <div className="flex items-start justify-between gap-3">
-          <p className="text-sm leading-relaxed text-foreground/90 text-pretty">{summary}</p>
+          <p className="text-pretty text-[15px] leading-relaxed text-foreground first-letter:font-display first-letter:text-[1.05em] first-letter:font-semibold">
+            {summary}
+          </p>
         </div>
         <div className="mt-2">
           <CopyButton value={summary} />
@@ -79,18 +81,27 @@ export function OutputPanel({ data, meetingId }: { data: OutputData; meetingId?:
       </Section>
 
       {/* Decisions */}
-      <Section id="decisions" icon={Gavel} title="Key Decisions" count={decisions.length}>
+      <Section id="decisions" icon={Gavel} title="Key decisions" count={decisions.length}>
         {decisions.length === 0 ? (
-          <Empty>No firm decisions were detected.</Empty>
+          <Empty>No firm decisions were recorded.</Empty>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-2.5">
             {decisions.map((d, i) => (
-              <li key={i} className="rounded-lg border border-border p-3">
-                <p className="text-sm font-medium">{d.decision}</p>
-                {d.rationale && <p className="mt-1 text-xs text-muted-foreground">{d.rationale}</p>}
-                <Badge variant="muted" className="mt-2">
-                  {Math.round(d.confidence * 100)}% confidence
-                </Badge>
+              <li key={i} className="liquid-glass hover-lift rounded-xl p-3.5">
+                <p className="font-display text-sm font-semibold leading-snug tracking-tight text-foreground">
+                  {d.decision}
+                </p>
+                {d.rationale && (
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{d.rationale}</p>
+                )}
+                <div className="mt-2.5 flex items-center gap-2">
+                  <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                    Confidence
+                  </span>
+                  <span className="font-mono text-xs font-medium tabular-nums text-foreground/80">
+                    {Math.round(d.confidence * 100)}%
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
@@ -98,10 +109,11 @@ export function OutputPanel({ data, meetingId }: { data: OutputData; meetingId?:
       </Section>
 
       {/* Action items pointer */}
-      <Section id="actions" icon={ListChecks} title="Action Items" count={taskCount}>
-        <p className="text-sm text-muted-foreground">
-          {taskCount} action {taskCount === 1 ? "item" : "items"} extracted — manage them in the Tasks
-          panel, where you can assign, edit, and complete each one.
+      <Section id="actions" icon={ListChecks} title="Action items" count={taskCount}>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          <span className="font-mono font-medium tabular-nums text-foreground">{taskCount}</span> action{" "}
+          {taskCount === 1 ? "item" : "items"} extracted. Assign, edit, and{" "}
+          <span className="hl">complete</span> each one in the Tasks panel.
         </p>
       </Section>
 
@@ -110,13 +122,20 @@ export function OutputPanel({ data, meetingId }: { data: OutputData; meetingId?:
         {deadlines.length === 0 ? (
           <Empty>No concrete deadlines were mentioned.</Empty>
         ) : (
-          <ul className="space-y-2">
+          <ul className="liquid-glass overflow-hidden rounded-xl">
             {deadlines.map((d, i) => (
-              <li key={i} className="flex items-center justify-between gap-2 text-sm">
-                <span>{d.what}</span>
+              <li
+                key={i}
+                className="flex items-center justify-between gap-2 border-b border-border/60 px-3.5 py-2.5 text-sm last:border-0"
+              >
+                <span className="text-foreground">{d.what}</span>
                 <div className="flex shrink-0 items-center gap-1.5">
                   {d.owner && <Badge variant="muted">{d.owner}</Badge>}
-                  {d.date && <Badge variant="warning">{d.date}</Badge>}
+                  {d.date && (
+                    <Badge variant="warning" className="font-mono tabular-nums">
+                      {d.date}
+                    </Badge>
+                  )}
                 </div>
               </li>
             ))}
@@ -129,10 +148,13 @@ export function OutputPanel({ data, meetingId }: { data: OutputData; meetingId?:
         {risks.length === 0 ? (
           <Empty>No risks were flagged.</Empty>
         ) : (
-          <ul className="space-y-2">
+          <ul className="liquid-glass overflow-hidden rounded-xl">
             {risks.map((r, i) => (
-              <li key={i} className="flex items-center justify-between gap-2 text-sm">
-                <span>{r.risk}</span>
+              <li
+                key={i}
+                className="flex items-center justify-between gap-2 border-b border-border/60 px-3.5 py-2.5 text-sm last:border-0"
+              >
+                <span className="text-foreground">{r.risk}</span>
                 <Badge variant={sevTone[r.severity]}>{r.severity}</Badge>
               </li>
             ))}
@@ -141,9 +163,9 @@ export function OutputPanel({ data, meetingId }: { data: OutputData; meetingId?:
       </Section>
 
       {/* Follow-up email */}
-      <Section id="email" icon={Mail} title="Follow-up Email">
-        <pre className="whitespace-pre-wrap rounded-lg border border-border bg-subtle/40 p-4 font-sans text-sm leading-relaxed">
-          {followupEmail || "No email generated."}
+      <Section id="email" icon={Mail} title="Follow-up email">
+        <pre className="liquid-glass whitespace-pre-wrap rounded-xl p-4 font-sans text-sm leading-relaxed text-foreground">
+          {followupEmail || "No email was generated."}
         </pre>
         <div className="mt-2 flex gap-1">
           <CopyButton value={followupEmail} label="Copy email" />
@@ -165,9 +187,9 @@ export function OutputPanel({ data, meetingId }: { data: OutputData; meetingId?:
       </Section>
 
       {/* MoM */}
-      <Section id="mom" icon={ScrollText} title="Meeting Minutes">
+      <Section id="mom" icon={ScrollText} title="Meeting minutes">
         {!mom ? (
-          <Empty>Minutes are not available.</Empty>
+          <Empty>Minutes are not available for this meeting.</Empty>
         ) : (
           <div>
             <MomView mom={mom} />
@@ -180,7 +202,7 @@ export function OutputPanel({ data, meetingId }: { data: OutputData; meetingId?:
                   disabled={exporting}
                 >
                   {exporting ? (
-                    <Loader2 className="size-3.5 animate-spin" />
+                    <Loader2 className="size-3.5 motion-safe:animate-spin" />
                   ) : (
                     <FileUp className="size-3.5" />
                   )}
@@ -229,10 +251,12 @@ function Section({
     <AccordionItem value={id}>
       <AccordionTrigger>
         <span className="flex items-center gap-2.5">
-          <Icon className="size-4 text-muted-foreground" />
-          {title}
+          <span className="glass-pill flex size-7 shrink-0 items-center justify-center rounded-lg">
+            <Icon className="size-3.5 text-ember" />
+          </span>
+          <span className="font-display text-[15px] font-semibold tracking-tight">{title}</span>
           {count !== undefined && count > 0 && (
-            <Badge variant="muted" className="ml-1">{count}</Badge>
+            <span className="font-mono text-xs tabular-nums text-muted-foreground">{count}</span>
           )}
         </span>
       </AccordionTrigger>
@@ -242,37 +266,46 @@ function Section({
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm text-muted-foreground">{children}</p>;
+  return <p className="text-sm leading-relaxed text-muted-foreground">{children}</p>;
 }
 
 function MomView({ mom }: { mom: Mom }) {
   return (
-    <div className="rounded-lg border border-border bg-subtle/40 p-5 text-sm">
-      <h3 className="font-display text-lg font-semibold tracking-[-0.01em]">{mom.title}</h3>
+    <div className="liquid-glass rounded-xl p-5 text-sm">
+      <h3 className="font-display text-xl font-semibold tracking-[-0.01em] text-foreground">
+        {mom.title}
+      </h3>
       <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
         {[mom.date, mom.participants.join(", ")].filter(Boolean).join(" · ")}
       </p>
+      <div className="mt-4 h-px w-full bg-border" />
       {mom.agenda.length > 0 && (
         <MomBlock title="Agenda">
-          <ul className="list-disc pl-4">{mom.agenda.map((a, i) => <li key={i}>{a}</li>)}</ul>
+          <ul className="list-disc space-y-1 pl-4 text-foreground/90 marker:text-ember/60">
+            {mom.agenda.map((a, i) => <li key={i}>{a}</li>)}
+          </ul>
         </MomBlock>
       )}
       <MomBlock title="Discussion">
-        <p className="text-muted-foreground">{mom.discussionSummary}</p>
+        <p className="leading-relaxed text-foreground/90">{mom.discussionSummary}</p>
       </MomBlock>
       {mom.decisions.length > 0 && (
         <MomBlock title="Decisions">
-          <ul className="list-disc pl-4">{mom.decisions.map((d, i) => <li key={i}>{d}</li>)}</ul>
+          <ul className="list-disc space-y-1 pl-4 text-foreground/90 marker:text-ember/60">
+            {mom.decisions.map((d, i) => <li key={i}>{d}</li>)}
+          </ul>
         </MomBlock>
       )}
       {mom.actionItems.length > 0 && (
-        <MomBlock title="Action Items">
-          <ul className="list-disc pl-4">{mom.actionItems.map((a, i) => <li key={i}>{a}</li>)}</ul>
+        <MomBlock title="Action items">
+          <ul className="list-disc space-y-1 pl-4 text-foreground/90 marker:text-ember/60">
+            {mom.actionItems.map((a, i) => <li key={i}>{a}</li>)}
+          </ul>
         </MomBlock>
       )}
       {mom.nextMeeting && (
-        <MomBlock title="Next Meeting">
-          <p className="text-muted-foreground">{mom.nextMeeting}</p>
+        <MomBlock title="Next meeting">
+          <p className="leading-relaxed text-foreground/90">{mom.nextMeeting}</p>
         </MomBlock>
       )}
     </div>
@@ -282,7 +315,7 @@ function MomView({ mom }: { mom: Mom }) {
 function MomBlock({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-4">
-      <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+      <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
         {title}
       </p>
       {children}

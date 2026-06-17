@@ -11,7 +11,7 @@ export function GoogleSignIn() {
     <Button
       size="lg"
       variant="outline"
-      className="w-full"
+      className="ease-ios w-full justify-center text-[15px]"
       disabled={loading}
       onClick={() => {
         setLoading(true);
@@ -23,7 +23,7 @@ export function GoogleSignIn() {
       ) : (
         <GoogleIcon />
       )}
-      Continue with Google
+      {loading ? "Connecting to Google…" : "Continue with Google"}
     </Button>
   );
 }

@@ -12,7 +12,7 @@ const priorities = [
   ["tasks", "Action items"],
   ["summaries", "Summaries"],
   ["followups", "Follow-up emails"],
-  ["mom", "Meeting Minutes"],
+  ["mom", "Meeting minutes"],
 ] as const;
 
 const tones = [
@@ -43,10 +43,10 @@ export function PreferencesForm({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <div>
-        <Label className="text-sm">AI priority</Label>
-        <p className="mb-3 text-xs text-muted-foreground">What the engine emphasizes per meeting.</p>
+        <Label className="text-sm font-medium">What to emphasize</Label>
+        <p className="mb-3 text-xs text-muted-foreground">The engine leads with this in every meeting record.</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {priorities.map(([v, label]) => (
             <Chip key={v} active={priority === v} onClick={() => setPriority(v)}>
@@ -57,8 +57,8 @@ export function PreferencesForm({
       </div>
 
       <div>
-        <Label className="text-sm">Follow-up email tone</Label>
-        <p className="mb-3 text-xs text-muted-foreground">How drafted emails sound.</p>
+        <Label className="text-sm font-medium">Follow-up email tone</Label>
+        <p className="mb-3 text-xs text-muted-foreground">How your drafted recaps read.</p>
         <div className="grid grid-cols-3 gap-2">
           {tones.map(([v, label]) => (
             <Chip key={v} active={tone === v} onClick={() => setTone(v)}>
@@ -70,7 +70,7 @@ export function PreferencesForm({
 
       <Button onClick={save} disabled={pending} size="sm">
         {pending && <Loader2 className="size-4 animate-spin" />}
-        Save preferences
+        {pending ? "Saving…" : "Save preferences"}
       </Button>
     </div>
   );
@@ -87,10 +87,14 @@ function Chip({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        "rounded-lg border px-3 py-2 text-sm transition-all",
-        active ? "border-foreground bg-secondary font-medium" : "border-border hover:bg-accent",
+        "rounded-xl px-3 py-2 text-[13px] transition-all duration-300 ease-ios",
+        active
+          ? "glass-pill font-medium text-ember ring-1 ring-ember/30"
+          : "border border-foreground/10 text-foreground/80 hover:border-foreground/20 hover:bg-foreground/[0.03]",
       )}
     >
       {children}

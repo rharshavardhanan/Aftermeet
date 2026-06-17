@@ -47,7 +47,7 @@ const STEPS = [
       ["tasks", "Action items"],
       ["summaries", "Summaries"],
       ["followups", "Follow-up emails"],
-      ["mom", "Meeting Minutes"],
+      ["mom", "Meeting minutes"],
     ],
   },
 ];
@@ -101,15 +101,20 @@ export function OnboardingWizard({ firstName }: { firstName?: string }) {
   }
 
   return (
-    <Card className="w-full max-w-xl p-8 shadow-card">
+    <Card className="animate-rise w-full max-w-xl rounded-3xl p-7 sm:p-9">
       <div className="flex items-center justify-between">
-        <LogoMark />
+        <span className="glass-pill inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3">
+          <LogoMark className="size-5" />
+          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+            Step {step + 1} of {STEPS.length}
+          </span>
+        </span>
         <div className="flex gap-1.5">
           {STEPS.map((_, i) => (
             <span
               key={i}
               className={cn(
-                "h-1.5 rounded-full transition-all duration-300 ease-out-expo",
+                "ease-ios h-1.5 rounded-full transition-all duration-500",
                 i === step ? "w-7 bg-ember" : i < step ? "w-1.5 bg-ember/50" : "w-1.5 bg-border",
               )}
             />
@@ -119,31 +124,44 @@ export function OnboardingWizard({ firstName }: { firstName?: string }) {
 
       <div className="mt-8">
         {step === 0 && firstName && (
-          <p className="mb-1 text-sm text-muted-foreground">Welcome, {firstName}.</p>
+          <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.16em] text-ember">
+            Welcome, {firstName}
+          </p>
         )}
-        <h1 className="font-display text-2xl font-semibold tracking-[-0.02em]">{current.title}</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">{current.subtitle}</p>
+        <h1 className="font-display text-[26px] font-semibold leading-[1.12] tracking-[-0.02em] text-balance">
+          {current.title}
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">{current.subtitle}</p>
 
-        <div className="mt-6 grid grid-cols-2 gap-2.5">
+        <div className="mt-7 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {current.options.map(([value, label]) => (
             <button
               key={value}
+              type="button"
+              aria-pressed={selected(value)}
               onClick={() => choose(value)}
               className={cn(
-                "flex items-center justify-between rounded-lg border px-4 py-3 text-left text-sm transition-all duration-200 ease-out-quart",
+                "ease-ios flex items-center justify-between rounded-xl border px-4 py-3.5 text-left text-sm transition-all duration-300 active:scale-[0.98]",
                 selected(value)
-                  ? "border-ember bg-ember/8 font-medium"
-                  : "border-border hover:border-foreground/25 hover:bg-accent",
+                  ? "glass-pill border-ember/60 font-medium text-foreground"
+                  : "hover-lift border-border hover:border-foreground/25 hover:bg-accent/60",
               )}
             >
               {label}
-              {selected(value) && <Check className="size-4 text-ember" strokeWidth={2.5} />}
+              {selected(value) && (
+                <Check className="size-4 shrink-0 text-ember" strokeWidth={2.5} />
+              )}
             </button>
           ))}
         </div>
+        {current.multi && (
+          <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            {data.platforms.length} selected
+          </p>
+        )}
       </div>
 
-      <div className="mt-8 flex items-center justify-between">
+      <div className="mt-9 flex items-center justify-between border-t border-border/70 pt-6">
         <Button
           variant="ghost"
           size="sm"
@@ -152,9 +170,13 @@ export function OnboardingWizard({ firstName }: { firstName?: string }) {
         >
           <ArrowLeft className="size-4" /> Back
         </Button>
-        <Button size="sm" disabled={!canAdvance || pending} onClick={next}>
+        <Button
+          size="sm"
+          disabled={!canAdvance || pending}
+          onClick={next}
+        >
           {pending ? <Loader2 className="size-4 animate-spin" /> : null}
-          {isLast ? "Finish" : "Continue"}
+          {isLast ? (pending ? "Setting up…" : "Finish setup") : "Continue"}
           {!isLast && !pending && <ArrowRight className="size-4" />}
         </Button>
       </div>

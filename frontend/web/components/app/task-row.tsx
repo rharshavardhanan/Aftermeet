@@ -41,16 +41,31 @@ export function TaskRow({ task, showQuote = false }: { task: TaskRowData; showQu
   }
 
   return (
-    <div className="group flex items-start gap-3 rounded-lg border border-border bg-card p-3.5 transition-colors hover:border-foreground/20">
-      <button onClick={toggle} className="mt-0.5 shrink-0" aria-label={done ? "Mark open" : "Mark done"}>
+    <div
+      className={cn(
+        "liquid-glass hover-lift group flex items-start gap-3 rounded-xl p-3.5",
+        done && "opacity-80",
+      )}
+    >
+      <button
+        onClick={toggle}
+        className="mt-0.5 shrink-0 transition-transform duration-200 ease-ios active:scale-90"
+        aria-label={done ? "Reopen task" : "Mark task done"}
+        aria-pressed={done}
+      >
         {done ? (
-          <CheckCircle2 className="size-[18px] text-success" />
+          <CheckCircle2 className="size-[18px] text-success animate-fade-in-sm" />
         ) : (
-          <Circle className="size-[18px] text-muted-foreground transition-colors group-hover:text-foreground" />
+          <Circle className="size-[18px] text-muted-foreground transition-colors group-hover:text-ember" />
         )}
       </button>
       <div className="min-w-0 flex-1">
-        <p className={cn("text-sm font-medium leading-snug", done && "text-muted-foreground line-through")}>
+        <p
+          className={cn(
+            "text-sm font-medium leading-snug text-foreground transition-colors",
+            done && "text-muted-foreground line-through",
+          )}
+        >
           {task.title}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -64,15 +79,17 @@ export function TaskRow({ task, showQuote = false }: { task: TaskRowData; showQu
               <Clock className="size-3" /> {formatDate(task.dueDate, { month: "short", day: "numeric" })}
             </Badge>
           )}
-          <Badge variant={conf.tone === "success" ? "success" : conf.tone === "warning" ? "warning" : "muted"}>
-            {conf.label} · {Math.round(task.confidence * 100)}%
+          <Badge
+            variant={conf.tone === "success" ? "success" : conf.tone === "warning" ? "warning" : "muted"}
+          >
+            {conf.label} <span className="font-mono tabular-nums">{Math.round(task.confidence * 100)}%</span>
           </Badge>
           {task.meetingTitle && (
             <span className="truncate text-xs text-muted-foreground">{task.meetingTitle}</span>
           )}
         </div>
         {showQuote && task.sourceQuote && (
-          <p className="mt-2.5 flex gap-2 rounded-md bg-muted/60 px-2.5 py-2 text-xs italic leading-relaxed text-muted-foreground">
+          <p className="glass-pill mt-2.5 flex gap-2 rounded-lg px-2.5 py-2 text-xs italic leading-relaxed text-foreground/80">
             <Quote className="mt-0.5 size-3 shrink-0 text-ember/70" />
             <span>{task.sourceQuote}</span>
           </p>

@@ -27,21 +27,21 @@ export function SiteNav() {
     <div className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-3">
       <nav
         className={cn(
-          "flex h-14 w-full max-w-3xl items-center justify-between rounded-full border px-2 py-2 transition-all duration-300 ease-out-expo",
+          "flex h-14 w-full max-w-3xl items-center justify-between rounded-full px-2 py-2 transition-all duration-500 ease-ios",
           scrolled
-            ? "border-border/80 bg-background/70 shadow-subtle backdrop-blur-xl"
-            : "border-transparent bg-transparent",
+            ? "liquid-glass scale-100"
+            : "scale-[0.98] border border-transparent bg-transparent",
         )}
       >
         <Link href="/" className="pl-2">
           <Logo />
         </Link>
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center gap-0.5 md:flex">
           {links.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-200 ease-ios hover:bg-foreground/[0.06] hover:text-foreground"
             >
               {l.label}
             </a>
