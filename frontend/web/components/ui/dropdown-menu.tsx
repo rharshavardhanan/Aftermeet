@@ -8,7 +8,7 @@ const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 const DropdownMenuSeparator = ({ className }: { className?: string }) => (
-  <DropdownMenuPrimitive.Separator className={cn("-mx-1 my-1 h-px bg-border", className)} />
+  <DropdownMenuPrimitive.Separator className={cn("-mx-1 my-1 h-px bg-foreground/10", className)} />
 );
 
 const DropdownMenuContent = React.forwardRef<
@@ -20,8 +20,8 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-float",
-        "data-[state=open]:animate-fade-in",
+        "liquid-glass-strong z-50 min-w-[10rem] overflow-hidden rounded-xl p-1 text-popover-foreground",
+        "data-[state=open]:animate-fade-in-sm",
         className,
       )}
       {...props}

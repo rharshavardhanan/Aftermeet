@@ -96,6 +96,19 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv11", "ss01";
+    /* Ambient warm light-field — soft ember/amber blooms the frosted glass
+       refracts. Subtle on purpose; it gives glass something to live over. */
+    background-image:
+      radial-gradient(62% 48% at 12% -4%, oklch(var(--ember) / 0.1), transparent 70%),
+      radial-gradient(52% 44% at 104% 8%, oklch(0.85 0.07 60 / 0.12), transparent 72%),
+      radial-gradient(46% 40% at 50% 108%, oklch(0.82 0.05 40 / 0.09), transparent 70%);
+    background-attachment: fixed;
+  }
+  .dark body {
+    background-image:
+      radial-gradient(62% 48% at 12% -4%, oklch(var(--ember) / 0.18), transparent 70%),
+      radial-gradient(52% 44% at 104% 8%, oklch(0.55 0.08 60 / 0.16), transparent 72%),
+      radial-gradient(46% 40% at 50% 108%, oklch(0.5 0.06 40 / 0.12), transparent 70%);
   }
   :focus-visible {
     @apply outline-none ring-2 ring-ring/45 ring-offset-2 ring-offset-background;
@@ -154,6 +167,30 @@
     box-shadow: 0 1px 0 0 oklch(1 0 0 / 0.14) inset;
   }
 
+  /* Stronger glass for overlays that sit above content — dialogs, dropdowns,
+     popovers, command surfaces. Higher opacity + blur so layered text stays
+     crisp, with a deeper float shadow. */
+  .liquid-glass-strong {
+    background: oklch(var(--popover) / 0.8);
+    -webkit-backdrop-filter: blur(30px) saturate(190%);
+    backdrop-filter: blur(30px) saturate(190%);
+    border: 1px solid oklch(var(--foreground) / 0.1);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.6) inset,
+      0 24px 60px -16px oklch(var(--foreground) / 0.34);
+  }
+  .dark .liquid-glass-strong {
+    background: oklch(var(--popover) / 0.74);
+    border-color: oklch(1 0 0 / 0.12);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.14) inset,
+      0 24px 60px -12px oklch(0 0 0 / 0.62);
+  }
+  @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .liquid-glass-strong { background: oklch(var(--popover) / 0.97); }
+    .dark .liquid-glass-strong { background: oklch(var(--popover) / 0.96); }
+  }
+
   /* Marker highlight — an ember swipe behind a key word.
      Background gradient on inline text (NOT gradient text). */
   .hl {
@@ -198,6 +235,25 @@
   @media (prefers-reduced-motion: reduce) {
     .ease-ios {
       transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Spring hover-lift for interactive glass surfaces (cards, panels). */
+  .hover-lift {
+    transition:
+      transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+      box-shadow 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hover-lift {
+      transition: none;
+    }
+    .hover-lift:hover {
+      transform: none;
     }
   }
 
