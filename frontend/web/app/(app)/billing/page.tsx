@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Check } from "lucide-react";
 import { auth, getCurrentWorkspace } from "@/lib/auth";
 import { isStripeConfigured } from "@/lib/stripe";
@@ -14,7 +15,8 @@ export const metadata: Metadata = { title: "Billing" };
 
 export default async function BillingPage() {
   const session = await auth();
-  const workspace = await getCurrentWorkspace(session!.user.id);
+  if (!session?.user?.id) redirect("/login");
+  const workspace = await getCurrentWorkspace(session.user.id);
   const billing = workspace?.billing;
   const plan = billing?.plan ?? "FREE";
   const used = billing?.meetingsUsed ?? 0;
