@@ -17,6 +17,7 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 import { ProductMockup } from "@/components/marketing/product-mockup";
 import { Reveal } from "@/components/marketing/reveal";
 import { HeroCanvas } from "@/components/marketing/hero-canvas";
+import { Parallax } from "@/components/marketing/parallax";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -58,7 +59,6 @@ export default function LandingPage() {
 
       {/* ── Hero — asymmetric, masthead-style ─────────────────────── */}
       <section className="relative overflow-hidden">
-        <div className="bg-grid absolute inset-0 -z-10" />
         <div className="container pt-32 pb-20 lg:pt-40">
           {/* Apple-style bento hero */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
@@ -148,7 +148,9 @@ export default function LandingPage() {
           </div>
 
           <Reveal delay={120} className="mt-16">
-            <ProductMockup />
+            <Parallax speed={0.1}>
+              <ProductMockup />
+            </Parallax>
           </Reveal>
         </div>
       </section>

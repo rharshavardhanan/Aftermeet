@@ -129,18 +129,37 @@ export function HeroCanvas({ className }: { className?: string }) {
         !reduceMotion && window.matchMedia("(pointer: fine)").matches;
       if (usePointer) window.addEventListener("pointermove", onPointer);
 
+      // Scroll reactivity — the object responds to scrolling the hero so the 3D
+      // feels purposeful, not idle. 0 at the top, grows as the hero scrolls away.
+      let scrollP = 0;
+      let scrollLerp = 0;
+      const onScroll = () => {
+        const rect = host.getBoundingClientRect();
+        const vh = window.innerHeight || 1;
+        scrollP = Math.min(Math.max(-rect.top / (vh * 0.9), 0), 1.2);
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+
       let raf = 0;
       let running = false;
       const render = () => {
         // Subtle parallax: drift the camera toward the pointer, never the object.
         camera.position.x += (pointer.x * 1.2 - camera.position.x) * 0.04;
         camera.position.y += (-pointer.y * 1.0 - camera.position.y) * 0.04;
+        camera.position.z = 6 + scrollLerp * 1.8; // pull back as you scroll
         camera.lookAt(0, 0, 0);
         renderer.render(scene, camera);
       };
+      let idleY = 0;
+      let idleX = 0;
       const tick = () => {
-        group.rotation.y += 0.0016;
-        group.rotation.x += 0.0006;
+        idleY += 0.0016;
+        idleX += 0.0006;
+        scrollLerp += (scrollP - scrollLerp) * 0.08;
+        group.rotation.y = idleY + scrollLerp * 2.0;
+        group.rotation.x = idleX + scrollLerp * 0.5;
+        group.position.y = scrollLerp * 0.7;
         dust.rotation.y -= 0.0004;
         render();
         raf = requestAnimationFrame(tick);
@@ -169,6 +188,7 @@ export function HeroCanvas({ className }: { className?: string }) {
         io.disconnect();
         ro.disconnect();
         if (usePointer) window.removeEventListener("pointermove", onPointer);
+        window.removeEventListener("scroll", onScroll);
         core.geometry.dispose();
         (core.material as { dispose(): void }).dispose();
         shell.geometry.dispose();
