@@ -1,5 +1,6 @@
 import "server-only";
 import jwt from "jsonwebtoken";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4001";
@@ -11,7 +12,7 @@ const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4001";
  */
 export async function serverApi<T>(path: string, init?: RequestInit): Promise<T> {
   const session = await auth();
-  if (!session?.user?.id) throw new Error("Not authenticated");
+  if (!session?.user?.id) redirect("/login");
   const secret = process.env.API_JWT_SECRET;
   if (!secret) throw new Error("API_JWT_SECRET is not configured");
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Plus, FileText, ListChecks, ArrowUpRight } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -18,10 +19,11 @@ export default async function HistoryPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const session = await auth();
+  if (!session?.user?.id) redirect("/login");
   const q = (await searchParams).q?.trim() ?? "";
   const meetings = await prisma.meeting.findMany({
     where: {
-      userId: session!.user.id,
+      userId: session.user.id,
       ...(q
         ? {
             OR: [
