@@ -52,10 +52,13 @@ const config: Config = {
         card: "0 1px 2px oklch(0.2 0.02 70 / 0.04), 0 10px 28px -8px oklch(0.2 0.02 70 / 0.10)",
         float: "0 12px 40px -10px oklch(0.2 0.02 70 / 0.18)",
         ember: "0 8px 30px -10px oklch(var(--ember) / 0.45)",
+        glass:
+          "0 1px 0 0 oklch(1 0 0 / 0.55) inset, 0 10px 34px -10px oklch(0.2 0.02 70 / 0.26)",
       },
       transitionTimingFunction: {
         "out-expo": "cubic-bezier(0.16, 1, 0.3, 1)",
         "out-quart": "cubic-bezier(0.25, 1, 0.5, 1)",
+        spring: "cubic-bezier(0.32, 0.72, 0, 1)",
       },
       keyframes: {
         "accordion-down": {
@@ -83,6 +86,11 @@ const config: Config = {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.35" },
         },
+        // iOS-style spring scale-in for dialogs/popovers (preserves centering).
+        "scale-in": {
+          from: { opacity: "0", transform: "translate(-50%, -48%) scale(0.96)" },
+          to: { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.24s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -91,6 +99,7 @@ const config: Config = {
         "fade-in-sm": "fade-in-sm 0.4s ease-out both",
         "rise": "rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both",
         "pulse-ember": "pulse-ember 1.6s ease-in-out infinite",
+        "scale-in": "scale-in 0.32s cubic-bezier(0.32, 0.72, 0, 1) both",
       },
     },
   },

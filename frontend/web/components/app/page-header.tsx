@@ -15,7 +15,7 @@ export function PageHeader({
     <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between", className)}>
       <div>
         {/* iOS large-title feel on mobile; refined size on desktop. */}
-        <h1 className="text-[28px] font-bold leading-tight tracking-[-0.02em] sm:text-xl sm:font-semibold sm:tracking-tight">
+        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] sm:text-2xl sm:font-semibold sm:tracking-tight">
           {title}
         </h1>
         {description && (
