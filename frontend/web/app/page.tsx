@@ -16,6 +16,7 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { ProductMockup } from "@/components/marketing/product-mockup";
 import { Reveal } from "@/components/marketing/reveal";
+import { HeroCanvas } from "@/components/marketing/hero-canvas";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -58,59 +59,95 @@ export default function LandingPage() {
       {/* ── Hero — asymmetric, masthead-style ─────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="bg-grid absolute inset-0 -z-10" />
-        <div className="container pt-36 pb-20 lg:pt-44">
-          <div className="grid items-end gap-10 lg:grid-cols-12">
-            <div className="lg:col-span-8">
-              <div className="mb-6 flex items-center gap-3 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                <span className="inline-block h-px w-8 bg-ember" />
-                The record of every decision
+        <div className="container pt-32 pb-20 lg:pt-40">
+          {/* Apple-style bento hero */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+            {/* Hero tile — ambient three.js visual behind the headline */}
+            <div className="liquid-glass relative flex flex-col justify-between overflow-hidden rounded-3xl p-8 sm:col-span-2 sm:p-10 lg:col-span-4 lg:row-span-2 lg:min-h-[440px]">
+              <HeroCanvas className="pointer-events-none absolute inset-0 opacity-70 [mask-image:radial-gradient(80%_80%_at_72%_42%,#000_38%,transparent_100%)]" />
+              <div className="relative z-10">
+                <div className="mb-6 flex items-center gap-3 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  <span className="inline-block h-px w-8 bg-ember" />
+                  The record of every decision
+                </div>
+                <h1 className="font-display text-[clamp(2.6rem,6vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.035em] text-balance">
+                  Turn meetings into <span className="hl">execution</span>.
+                </h1>
+                <p className="mt-6 max-w-md text-lg leading-relaxed text-muted-foreground text-pretty">
+                  Aftermeet reads your transcripts and hands back what matters — action items,
+                  decisions, and minutes — so nothing slips between the call and the work.
+                </p>
               </div>
-              <h1 className="font-display text-[clamp(2.7rem,7vw,5.4rem)] font-semibold leading-[0.96] tracking-[-0.035em] text-balance">
-                Turn meetings into <span className="hl">execution</span>.
-              </h1>
-              <p className="mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground text-pretty">
-                Aftermeet reads your transcripts and hands back the things that matter, action
-                items, decisions, and minutes, so nothing gets lost between the call and the work.
-              </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Button asChild size="lg">
-                  <Link href="/login">
-                    Start free <ArrowRight className="size-4" />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="outline">
-                  <Link href="/extension">
-                    <Chrome className="size-4" /> Install extension
-                  </Link>
-                </Button>
+              <div className="relative z-10 mt-9">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button asChild size="lg">
+                    <Link href="/login">Start free <ArrowRight className="size-4" /></Link>
+                  </Button>
+                  <Button asChild size="lg" variant="outline">
+                    <Link href="/extension"><Chrome className="size-4" /> Install extension</Link>
+                  </Button>
+                </div>
+                <p className="mt-4 font-mono text-xs text-muted-foreground">
+                  No credit card · 10 free meetings / month
+                </p>
               </div>
-              <p className="mt-4 font-mono text-xs text-muted-foreground">
-                No credit card · 10 free meetings / month
-              </p>
             </div>
 
-            {/* right masthead column */}
-            <aside className="liquid-glass rounded-2xl p-6 lg:col-span-4">
+            {/* What lands in your workspace */}
+            <div className="liquid-glass rounded-3xl p-6 lg:col-span-2">
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                 What lands in your workspace
               </p>
-              <ul className="mt-5 space-y-3.5">
+              <ul className="mt-4 space-y-3">
                 {[
                   ["Summary", "Outcomes over chronology"],
                   ["Action items", "Owner · due · source quote"],
                   ["Decisions", "Committed, not discussed"],
                   ["Minutes", "Formatted, ready to send"],
                 ].map(([h, d]) => (
-                  <li key={h} className="flex items-baseline justify-between gap-4 border-b border-border/60 pb-3.5 last:border-0 last:pb-0">
+                  <li
+                    key={h}
+                    className="flex items-baseline justify-between gap-3 border-b border-border/50 pb-3 last:border-0 last:pb-0"
+                  >
                     <span className="shrink-0 text-sm font-medium">{h}</span>
                     <span className="min-w-0 text-right text-xs text-muted-foreground">{d}</span>
                   </li>
                 ))}
               </ul>
-            </aside>
+            </div>
+
+            {/* Live, in-call preview */}
+            <div className="liquid-glass rounded-3xl p-6 lg:col-span-2">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  <span className="size-2 animate-pulse-ember rounded-full bg-ember motion-reduce:animate-none" />
+                  Live
+                </span>
+                <span className="font-mono text-[11px] tabular-nums text-muted-foreground">12:04</span>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-foreground/85">
+                &ldquo;Sarah will send the revised deck by Friday.&rdquo;
+              </p>
+              <div className="glass-pill mt-3 flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs">
+                <ListChecks className="size-3.5 shrink-0 text-ember" /> Send revised deck
+                <span className="ml-auto font-mono text-[10px] text-muted-foreground">Sarah · Fri</span>
+              </div>
+            </div>
+
+            {/* Metric strip */}
+            {[
+              ["45", "languages, incl. Tamil"],
+              ["Seconds", "to formatted minutes"],
+              ["1 click", "live notes inside the call"],
+            ].map(([k, v]) => (
+              <div key={v} className="liquid-glass rounded-3xl px-6 py-5 sm:col-span-2 lg:col-span-2">
+                <p className="font-display text-2xl font-semibold tracking-tight text-ember">{k}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{v}</p>
+              </div>
+            ))}
           </div>
 
-          <Reveal delay={120} className="mt-20">
+          <Reveal delay={120} className="mt-16">
             <ProductMockup />
           </Reveal>
         </div>
