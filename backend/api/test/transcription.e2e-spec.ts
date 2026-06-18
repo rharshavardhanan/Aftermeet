@@ -14,16 +14,17 @@ function bearer(): string {
 
 describe('Transcription (e2e)', () => {
   let app: INestApplication;
+  // The service now owns the whole pipeline (chunk -> transcribe -> refine)
+  // and returns the final text. No language is ever passed in.
   const transcribe = jest
     .fn()
-    .mockResolvedValue({ text: 'raw text', language: 'ta' });
-  const refine = jest.fn().mockResolvedValue('Refined: வணக்கம்');
+    .mockResolvedValue({ text: 'Speaker 1: வணக்கம், let us start the sync.', language: null });
 
   beforeAll(async () => {
     process.env.API_JWT_SECRET = SECRET;
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(TranscriptionService)
-      .useValue({ transcribe, refine })
+      .useValue({ transcribe })
       .overrideProvider(PrismaService)
       .useValue({ $queryRaw: jest.fn(), onModuleInit: jest.fn(), onModuleDestroy: jest.fn() })
       .compile();
@@ -36,35 +37,29 @@ describe('Transcription (e2e)', () => {
     await app.close();
   });
 
-  it('GET /languages includes Tamil (whisper) and Odia (gemini fallback)', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/languages')
-      .set('Authorization', bearer());
-    expect(res.status).toBe(200);
-    const ta = res.body.find((l: { code: string }) => l.code === 'ta');
-    const or = res.body.find((l: { code: string }) => l.code === 'or');
-    expect(ta).toEqual({ code: 'ta', label: 'Tamil', whisper: true });
-    expect(or).toEqual({ code: 'or', label: 'Odia', whisper: false });
-    expect(res.body.length).toBeGreaterThanOrEqual(30);
-  });
-
   it('POST /transcribe requires auth', async () => {
     const res = await request(app.getHttpServer()).post('/transcribe');
     expect(res.status).toBe(401);
   });
 
-  it('POST /transcribe transcribes + refines an uploaded clip with a language hint', async () => {
+  it('POST /transcribe transcribes an uploaded clip automatically (no language hint)', async () => {
     const res = await request(app.getHttpServer())
       .post('/transcribe')
       .set('Authorization', bearer())
-      .field('language', 'ta')
       .attach('audio', Buffer.from('fake-audio-bytes'), {
         filename: 'call.webm',
         contentType: 'audio/webm',
       });
     expect(res.status).toBe(201);
-    expect(res.body).toEqual({ text: 'Refined: வணக்கம்', language: 'ta' });
-    expect(transcribe).toHaveBeenCalled();
-    expect(refine).toHaveBeenCalledWith('raw text', 'ta');
+    expect(res.body).toEqual({
+      text: 'Speaker 1: வணக்கம், let us start the sync.',
+      language: null,
+    });
+    // Service is called with a file path + mimetype — never a language.
+    expect(transcribe).toHaveBeenCalledTimes(1);
+    const args = transcribe.mock.calls[0];
+    expect(typeof args[0]).toBe('string'); // disk path
+    expect(args[1]).toBe('audio/webm');
+    expect(args).toHaveLength(2);
   });
 });
