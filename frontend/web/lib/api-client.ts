@@ -133,22 +133,6 @@ export async function setTaskDoneViaApi(
   if (!res.ok) throw new Error("Update failed");
 }
 
-export interface LanguageOption {
-  code: string;
-  label: string;
-  whisper: boolean;
-}
-
-/** Supported transcription languages from the backend (45-language two-tier set). */
-export async function fetchLanguages(
-  base: string = DEFAULT_BASE,
-  fetchImpl: FetchLike = fetch,
-): Promise<LanguageOption[]> {
-  const res = await backendFetch("/languages", {}, base, fetchImpl);
-  if (!res.ok) throw new Error("Failed to load languages");
-  return (await res.json()) as LanguageOption[];
-}
-
 /** Start a Stripe Checkout session; returns the hosted checkout URL. */
 export async function createCheckoutViaApi(
   base: string = DEFAULT_BASE,
