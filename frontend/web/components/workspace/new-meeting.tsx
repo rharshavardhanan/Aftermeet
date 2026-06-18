@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Sparkles, Upload, Mic, Square, Loader2, FileText, Clipboard, MonitorSpeaker } from "lucide-react";
+import { Sparkles, Upload, Mic, Square, Loader2, FileText, Clipboard, MonitorSpeaker, Globe } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { LanguageSheet } from "@/components/workspace/language-sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useRecorder, formatClock } from "@/hooks/use-recorder";
-import { processMeetingViaApi, transcribeViaApi, fetchLanguages } from "@/lib/api-client";
+import { processMeetingViaApi, transcribeViaApi } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 const SAMPLE = `Alex: Thanks everyone for joining. Main goal today is to lock the Q3 launch.
@@ -22,27 +21,6 @@ Alex: Agreed, let's make the 14th the date. Marco, can you fix the rate limit by
 Marco: Yes, I'll have it done by Wednesday.
 Sarah: I'll also loop in design on the launch assets.
 Alex: Great. Let's review progress in our sync on Monday.`;
-
-const FALLBACK_LANGUAGES = [
-  { code: "", label: "Auto-detect" },
-  { code: "ta", label: "Tamil" },
-  { code: "hi", label: "Hindi" },
-  { code: "te", label: "Telugu" },
-  { code: "kn", label: "Kannada" },
-  { code: "ml", label: "Malayalam" },
-  { code: "bn", label: "Bengali" },
-  { code: "mr", label: "Marathi" },
-  { code: "ur", label: "Urdu" },
-  { code: "ar", label: "Arabic" },
-  { code: "zh", label: "Chinese" },
-  { code: "ja", label: "Japanese" },
-  { code: "ko", label: "Korean" },
-  { code: "fr", label: "French" },
-  { code: "de", label: "German" },
-  { code: "es", label: "Spanish" },
-  { code: "pt", label: "Portuguese" },
-  { code: "en", label: "English" },
-];
 
 type Mode = "paste" | "upload" | "record";
 
@@ -54,35 +32,14 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
   const [pending, startTransition] = useTransition();
   const [transcribing, setTranscribing] = useState(false);
   const [captureMode, setCaptureMode] = useState<"mic" | "system">("mic");
-  const [language, setLanguage] = useState("");
-  const [languages, setLanguages] = useState(FALLBACK_LANGUAGES);
   const fileRef = useRef<HTMLInputElement>(null);
   const recorder = useRecorder();
-
-  // Load the full 45-language set from the backend; keep the static list as a
-  // fallback if the backend is unreachable.
-  useEffect(() => {
-    let alive = true;
-    fetchLanguages()
-      .then((list) => {
-        if (!alive) return;
-        setLanguages([
-          { code: "", label: "Auto-detect" },
-          ...list.map((l) => ({ code: l.code, label: l.label })),
-        ]);
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   async function transcribeBlob(file: File) {
     setTranscribing(true);
     try {
       const form = new FormData();
       form.append("audio", file);
-      if (language) form.append("language", language);
       const json = await transcribeViaApi(form);
       setTranscript((t) => (t ? `${t}\n${json.text}` : json.text));
       setTab("paste");
@@ -159,9 +116,15 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
               <TabsTrigger value="upload"><Upload className="mr-1.5 size-3.5" /> Upload</TabsTrigger>
               <TabsTrigger value="record"><Mic className="mr-1.5 size-3.5" /> Record</TabsTrigger>
             </TabsList>
-            {/* Language hint — only relevant for audio tabs (iOS action sheet) */}
+            {/* Automatic multilingual transcription — no picker needed. */}
             {tab !== "paste" && (
-              <LanguageSheet value={language} options={languages} onChange={setLanguage} />
+              <span
+                className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground"
+                title="Detects and preserves every language spoken, including mixed-language (code-switched) speech."
+              >
+                <Globe className="size-3.5 shrink-0" />
+                Auto · detects &amp; preserves every language
+              </span>
             )}
           </div>
 
@@ -202,7 +165,7 @@ export function NewMeeting({ defaultRecord = false }: { defaultRecord?: boolean 
                 )}
               </span>
               <p className="mt-3.5 text-sm font-medium text-foreground">
-                {transcribing ? "Transcribing…" : "Click to upload a file"}
+                {transcribing ? "Transcribing… long meetings can take a minute" : "Click to upload a file"}
               </p>
               <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
                 .txt / .vtt / .srt transcript, or .mp3 / .m4a / .wav audio
