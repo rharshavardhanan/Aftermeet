@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Info } from "lucide-react";
-import { isAiConfigured } from "@/lib/openai";
+import { getHealth } from "@/lib/api-client";
 import { PageHeader } from "@/components/app/page-header";
 import { NewMeeting } from "@/components/workspace/new-meeting";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,12 @@ export default async function WorkspacePage({
   searchParams: Promise<{ record?: string }>;
 }) {
   const sp = await searchParams;
-  const aiOn = isAiConfigured();
+  // Transcription and extraction both run on the backend now, so it is the only
+  // side that knows whether a provider key is present. A down backend reads as
+  // demo mode rather than failing the page.
+  const aiOn = await getHealth()
+    .then((h) => h.ai === "up")
+    .catch(() => false);
 
   return (
     <div className="container max-w-3xl space-y-6 py-8">
@@ -36,9 +41,9 @@ export default async function WorkspacePage({
           <p className="leading-relaxed">
             You&apos;re in <span className="font-medium">demo mode</span>. Set{" "}
             <code className="glass-pill rounded-md px-1.5 py-0.5 font-mono text-xs text-foreground">
-              OPENAI_API_KEY
+              GROQ_API_KEY
             </code>{" "}
-            for full-quality extraction and audio transcription.
+            on the backend for full-quality transcription and extraction.
           </p>
         </div>
       )}

@@ -1,10 +1,10 @@
-// Minimal typed client for the NestJS backend. Phase 0 only exposes the health
-// check; later phases add authenticated resource calls. Reads the base URL from
-// NEXT_PUBLIC_API_BASE_URL so it works in both browser and server contexts.
+// Typed client for the NestJS backend. Reads NEXT_PUBLIC_API_BASE_URL so the
+// same helpers work in browser and server contexts.
 
 export interface HealthResponse {
   status: "ok";
   db: "up" | "down";
+  ai: "up" | "down";
 }
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -35,11 +35,7 @@ export async function getApiToken(fetchImpl: FetchLike = fetch): Promise<string>
   return json.token;
 }
 
-/**
- * Call the standalone backend with a bearer token attached. Browser-side helper:
- * fetches a token from /api/token, then calls the NestJS API. `base`/`fetchImpl`
- * are injectable for tests.
- */
+/** Browser-side backend call: mint a token at /api/token, attach it as bearer. */
 export async function backendFetch(
   path: string,
   init: RequestInit = {},
@@ -100,7 +96,7 @@ export async function processMeetingViaApi(
   return json as { meetingId: string };
 }
 
-/** Upload audio for transcription. `form` must carry `audio` (+ optional `language`). */
+/** Upload audio for transcription. `form` must carry an `audio` file. */
 export async function transcribeViaApi(
   form: FormData,
   base: string = DEFAULT_BASE,
@@ -111,6 +107,17 @@ export async function transcribeViaApi(
   const json = await res.json();
   if (!res.ok) throw new Error(json.error ?? "Transcription failed");
   return json as { text: string; language: string | null };
+}
+
+/** Is an extension capture session live right now? */
+export async function getExtensionStatusViaApi(
+  base: string = DEFAULT_BASE,
+  fetchImpl: FetchLike = fetch,
+): Promise<boolean> {
+  const res = await backendFetch("/extension/session", {}, base, fetchImpl);
+  if (!res.ok) return false;
+  const json = (await res.json()) as { connected?: boolean };
+  return Boolean(json.connected);
 }
 
 /** Mark a task done / not-done. */

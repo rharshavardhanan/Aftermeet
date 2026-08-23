@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Check } from "lucide-react";
 import { auth, getCurrentWorkspace } from "@/lib/auth";
-import { isStripeConfigured } from "@/lib/stripe";
 import { PageHeader } from "@/components/app/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +22,9 @@ export default async function BillingPage() {
   const limit = billing?.meetingsLimit ?? 10;
   const isPro = plan === "PRO";
   const pct = isPro ? 0 : Math.min(100, Math.round((used / Math.max(limit, 1)) * 100));
+  // Checkout itself lives on the backend; the price ID is the one half of the
+  // Stripe config the browser is allowed to see.
+  const checkoutLive = Boolean(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY);
 
   return (
     <div className="container max-w-4xl space-y-7 py-8">
@@ -72,13 +74,14 @@ export default async function BillingPage() {
         )}
       </Card>
 
-      {!isStripeConfigured() && (
+      {!checkoutLive && (
         <Card className="border-l-2 border-l-warning/50">
           <CardContent className="py-5 text-sm">
             <span className="font-medium">Checkout isn&apos;t live yet.</span>{" "}
             <span className="text-muted-foreground">
-              Add <code className="rounded bg-foreground/[0.06] px-1 font-mono text-xs">STRIPE_SECRET_KEY</code> and a price ID
-              to enable upgrades.
+              Set <code className="rounded bg-foreground/[0.06] px-1 font-mono text-xs">NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY</code>{" "}
+              here and <code className="rounded bg-foreground/[0.06] px-1 font-mono text-xs">STRIPE_SECRET_KEY</code> on the
+              backend to enable upgrades.
             </span>
           </CardContent>
         </Card>
@@ -137,7 +140,7 @@ export default async function BillingPage() {
                       You&apos;re on Pro
                     </Button>
                   ) : (
-                    <UpgradeButton disabled={!isStripeConfigured()} />
+                    <UpgradeButton disabled={!checkoutLive} />
                   )
                 ) : (
                   <Button variant="outline" className="w-full" disabled>

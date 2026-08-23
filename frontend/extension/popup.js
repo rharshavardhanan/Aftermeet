@@ -2,7 +2,6 @@ const DEFAULTS = {
   appOrigin: "http://localhost:4000",
   apiBase: "http://localhost:4001",
   token: "",
-  language: "",
 };
 
 const $ = (id) => document.getElementById(id);

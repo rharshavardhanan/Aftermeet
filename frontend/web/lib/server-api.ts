@@ -6,9 +6,8 @@ import { auth } from "@/lib/auth";
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4001";
 
 /**
- * Server-side authenticated call to the NestJS backend. Mints a short-lived app
- * JWT from the current NextAuth session (same shared API_JWT_SECRET the backend
- * verifies) and attaches it as a bearer. For React Server Components.
+ * The React Server Component counterpart to `backendFetch`: signs a short-lived
+ * JWT straight from the NextAuth session rather than round-tripping /api/token.
  */
 export async function serverApi<T>(path: string, init?: RequestInit): Promise<T> {
   const session = await auth();

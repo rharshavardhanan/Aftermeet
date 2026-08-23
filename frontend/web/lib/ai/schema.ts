@@ -1,10 +1,7 @@
 import { z } from "zod";
 
-/**
- * The contract the model must satisfy. We validate every response against
- * this and retry on failure. Confidence is first-class so the UI can be
- * honest about uncertainty instead of presenting guesses as facts.
- */
+// The contract the model must satisfy: every response is validated against
+// this and retried on failure. Confidence is carried so the UI can show it.
 
 export const taskSchema = z.object({
   title: z.string().min(1).describe("Imperative, specific action. No fluff."),
@@ -74,7 +71,7 @@ export type Extraction = z.infer<typeof extractionSchema>;
 export type ExtractedTask = z.infer<typeof taskSchema>;
 export type Mom = z.infer<typeof momSchema>;
 
-/** JSON Schema handed to the model via response_format. Kept in sync with zod above. */
+/** JSON Schema handed to the model. Must stay in sync with the zod shape above. */
 export const extractionJsonSchema = {
   name: "meeting_extraction",
   strict: false,

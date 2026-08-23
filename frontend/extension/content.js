@@ -11,32 +11,10 @@
     appOrigin: "http://localhost:4000",
     apiBase: "http://localhost:4001",
     token: "",
-    language: "",
   };
   const PLATFORM = location.host.includes("zoom") ? "Zoom" : "Google Meet";
   const SESSION_PLATFORM = location.host.includes("zoom") ? "zoom" : "meet";
   if (document.getElementById("m2t-panel")) return;
-
-  // Curated subset for the in-call picker (full set lives on the backend).
-  const LANGS = [
-    { code: "", label: "Auto" },
-    { code: "ta", label: "Tamil" },
-    { code: "hi", label: "Hindi" },
-    { code: "te", label: "Telugu" },
-    { code: "kn", label: "Kannada" },
-    { code: "ml", label: "Malayalam" },
-    { code: "mr", label: "Marathi" },
-    { code: "bn", label: "Bengali" },
-    { code: "gu", label: "Gujarati" },
-    { code: "pa", label: "Punjabi" },
-    { code: "ur", label: "Urdu" },
-    { code: "en", label: "English" },
-  ];
-  // Map our codes to Web Speech BCP-47 tags for live (mic) recognition.
-  const ASR_LANG = {
-    ta: "ta-IN", hi: "hi-IN", te: "te-IN", kn: "kn-IN", ml: "ml-IN",
-    mr: "mr-IN", bn: "bn-IN", gu: "gu-IN", pa: "pa-IN", ur: "ur-IN", en: "en-US",
-  };
 
   let cfg = { ...DEFAULTS };
   let recording = false;
@@ -60,9 +38,6 @@
     <div class="m2t-body">
       <div class="m2t-row">
         <span id="m2t-timer" class="m2t-timer">00:00</span>
-        <select id="m2t-lang" class="m2t-lang" title="Spoken language">
-          ${LANGS.map((l) => `<option value="${l.code}">${l.label}</option>`).join("")}
-        </select>
         <button id="m2t-toggle" class="m2t-btn m2t-btn-primary">Start AI Notes</button>
       </div>
       <div class="m2t-section-label">Live transcript</div>
@@ -80,24 +55,17 @@
   const tasksEl = panel.querySelector("#m2t-tasks");
   const timerEl = panel.querySelector("#m2t-timer");
   const dot = panel.querySelector("#m2t-status-dot");
-  const langEl = panel.querySelector("#m2t-lang");
   const workspaceLink = panel.querySelector("#m2t-workspace");
 
   // ---- Config --------------------------------------------------------------
   chrome.storage.local.get(DEFAULTS, (stored) => {
     cfg = { ...DEFAULTS, ...stored };
-    langEl.value = cfg.language || "";
     workspaceLink.href = `${cfg.appOrigin}/dashboard`;
     if (!cfg.token) {
       transcriptEl.textContent =
         "Not connected. Open the extension popup → Connect to sign in and paste your token.";
     }
   });
-  langEl.addEventListener("change", () => {
-    cfg.language = langEl.value;
-    chrome.storage.local.set({ language: cfg.language });
-  });
-
   const authHeaders = (extra = {}) => ({
     Authorization: `Bearer ${cfg.token}`,
     ...extra,
@@ -114,7 +82,9 @@
     recognition = new SR();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = ASR_LANG[cfg.language] || "en-US";
+    // Left unset so it follows the browser locale. This is only the live
+    // preview; the authoritative multilingual transcript comes back from
+    // /transcribe on stop.
     recognition.onresult = (e) => {
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -186,7 +156,6 @@
         const blob = new Blob([new Uint8Array(msg.bytes)], { type: msg.mime || "audio/webm" });
         const form = new FormData();
         form.append("audio", new File([blob], "call.webm", { type: blob.type }));
-        if (cfg.language) form.append("language", cfg.language);
         const res = await fetch(`${cfg.apiBase}/transcribe`, {
           method: "POST",
           headers: authHeaders(),

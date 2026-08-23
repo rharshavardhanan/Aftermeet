@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { getExtensionStatusViaApi } from "@/lib/api-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogoMark } from "@/components/brand/logo";
 import {
@@ -115,10 +116,8 @@ function useExtensionStatus() {
     let alive = true;
     const check = async () => {
       try {
-        const res = await fetch("/api/extension/session", { cache: "no-store" });
-        if (!res.ok) return;
-        const json = (await res.json()) as { connected?: boolean };
-        if (alive) setConnected(!!json.connected);
+        const isConnected = await getExtensionStatusViaApi();
+        if (alive) setConnected(isConnected);
       } catch {
         /* offline / not signed in — leave as not connected */
       }

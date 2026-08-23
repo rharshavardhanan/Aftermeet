@@ -51,11 +51,7 @@ export function downloadText(filename: string, content: string, type = "text/mar
   URL.revokeObjectURL(url);
 }
 
-/**
- * Print-to-PDF via the browser. We open a styled, self-contained document and
- * call print() — no heavy PDF dependency, and the output respects the user's
- * paper size. Good enough for clean MoM exports.
- */
+/** Print-to-PDF via the browser, so no PDF dependency is needed. */
 export function printToPdf(title: string, bodyHtml: string) {
   const win = window.open("", "_blank", "width=820,height=1000");
   if (!win) return;
