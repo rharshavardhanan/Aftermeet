@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import {
   groq,
   GROQ_MODEL,
+  GROQ_STT_MODEL,
   gemini,
   GEMINI_MODEL,
   isGeminiConfigured,
@@ -40,9 +41,8 @@ export interface TranscribeResult {
 export class TranscriptionService {
   constructor(private readonly chunking: AudioChunkingService) {}
 
-  // Full pipeline: chunk -> transcribe each chunk (auto, code-switch aware,
-  // Gemini primary / Whisper fallback) with bounded concurrency -> stitch ->
-  // refine. Never pins a language. Always cleans up temp chunk files.
+  // chunk -> transcribe each chunk concurrently -> stitch -> refine.
+  // Never pins a language. Always cleans up temp chunk files.
   async transcribe(inputPath: string, mimetype: string): Promise<TranscribeResult> {
     let paths: string[];
     let cleanup: () => Promise<void>;
@@ -73,20 +73,29 @@ export class TranscriptionService {
 
   // One chunk through the engine chain with a single retry, then a placeholder
   // so one bad segment never fails an entire (possibly hours-long) transcript.
+  // Groq Whisper leads: it is a dedicated ASR model, it is free, and it handles
+  // code-switching better than the multimodal fallbacks.
   async transcribeChunk(filePath: string, mimetype: string): Promise<string> {
+    const engines: Array<() => Promise<string>> = [];
+    if (isGroqConfigured()) engines.push(() => this.withGroq(filePath, mimetype));
+    if (isGeminiConfigured()) engines.push(() => this.withGemini(filePath, mimetype));
+    if (process.env.OPENAI_API_KEY) {
+      engines.push(() => this.withWhisperOpenAI(filePath, mimetype));
+    }
+    if (engines.length === 0) {
+      throw new BadRequestException('No transcription provider is configured.');
+    }
+
     const attempt = async (): Promise<string> => {
-      if (isGeminiConfigured()) {
+      let last: unknown;
+      for (const run of engines) {
         try {
-          return await this.withGemini(filePath, mimetype);
+          return await run();
         } catch (err) {
-          if (isGroqConfigured()) return await this.withGroq(filePath, mimetype);
-          if (process.env.OPENAI_API_KEY) return await this.withWhisperOpenAI(filePath, mimetype);
-          throw err;
+          last = err;
         }
       }
-      if (isGroqConfigured()) return await this.withGroq(filePath, mimetype);
-      if (process.env.OPENAI_API_KEY) return await this.withWhisperOpenAI(filePath, mimetype);
-      throw new BadRequestException('No transcription provider is configured.');
+      throw last;
     };
 
     try {
@@ -107,11 +116,15 @@ export class TranscriptionService {
     });
     // No `language`, no script-priming prompt — true auto-detect handles
     // arbitrary code-switching far better than pinning a single language.
-    const res = await groq().audio.transcriptions.create({
-      file: upload,
-      model: 'whisper-large-v3',
-      response_format: 'verbose_json',
-    });
+    const res = await withTimeout(
+      groq().audio.transcriptions.create({
+        file: upload,
+        model: GROQ_STT_MODEL,
+        response_format: 'verbose_json',
+      }),
+      TRANSCRIBE_TIMEOUT_MS,
+      'groq transcription',
+    );
     return res.text;
   }
 
@@ -120,11 +133,15 @@ export class TranscriptionService {
     const upload = await toFile(buf, path.basename(filePath), {
       type: mimetype || CHUNK_MIME,
     });
-    const res = await openai().audio.transcriptions.create({
-      file: upload,
-      model: OPENAI_TRANSCRIBE_MODEL,
-      response_format: 'verbose_json',
-    });
+    const res = await withTimeout(
+      openai().audio.transcriptions.create({
+        file: upload,
+        model: OPENAI_TRANSCRIBE_MODEL,
+        response_format: 'verbose_json',
+      }),
+      TRANSCRIBE_TIMEOUT_MS,
+      'openai transcription',
+    );
     return res.text;
   }
 

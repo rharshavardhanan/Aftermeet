@@ -20,8 +20,8 @@ type CreateResult = { url: string } | { error: string; status: number };
 export class GoogleService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Reads the user's Google access token from their NextAuth Account row,
-  // refreshing via the stored refresh_token when expired. (Ported from monolith.)
+  // Reads the Google access token from the user's NextAuth Account row,
+  // refreshing via the stored refresh_token when expired.
   async getAccessToken(userId: string): Promise<TokenResult> {
     const account = await this.prisma.account.findFirst({
       where: { userId, provider: 'google' },

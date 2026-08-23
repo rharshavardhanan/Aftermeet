@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Aggregates the dashboard view in one call (mirrors the monolith page).
+  // Aggregates every dashboard panel in one round trip.
   async summary(userId: string) {
     const [
       recentMeetings,

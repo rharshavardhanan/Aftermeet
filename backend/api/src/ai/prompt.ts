@@ -1,6 +1,4 @@
-/**
- * System prompt for meeting extraction. Ported verbatim from the monolith.
- */
+// System prompt for meeting extraction.
 export const SYSTEM_PROMPT = `You are the extraction engine inside Aftermeet, a professional productivity tool. You convert raw meeting transcripts into precise, structured execution data. Operators rely on your output to run their work — accuracy and restraint matter more than completeness.
 
 CORE RULES

@@ -9,8 +9,6 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(private readonly users: UsersService) {}
 
-  // Returns the signed-in user's profile — proves the full auth chain
-  // (frontend-minted JWT -> guard -> Prisma).
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
     return this.users.profile(user.id);

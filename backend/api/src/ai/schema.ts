@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// The contract the model must satisfy. Ported verbatim from the monolith.
+// The contract the model must satisfy.
 export const taskSchema = z.object({
   title: z.string().min(1),
   assignee: z.string().nullable(),

@@ -1,9 +1,6 @@
 import { Extraction } from './schema';
 
-/**
- * Deterministic demo extraction used when no AI provider is configured.
- * Ported verbatim from the monolith.
- */
+// Deterministic demo extraction used when no AI provider is configured.
 export function mockExtract(transcript: string, meetingDate = new Date()): Extraction {
   const sentences = transcript
     .replace(/\s+/g, ' ')

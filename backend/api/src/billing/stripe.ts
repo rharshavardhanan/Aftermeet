@@ -13,10 +13,7 @@ export function stripe(): Stripe {
   return client;
 }
 
-export const PRO_PRICE_ID =
-  process.env.STRIPE_PRICE_PRO_MONTHLY ??
-  process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY ??
-  '';
+export const PRO_PRICE_ID = process.env.STRIPE_PRICE_PRO_MONTHLY ?? '';
 
 export function isStripeConfigured(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY && PRO_PRICE_ID);

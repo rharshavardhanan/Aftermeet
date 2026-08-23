@@ -2,8 +2,7 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { AuthUser } from './auth-user';
 import { AuthedRequest } from './jwt-auth.guard';
 
-// Injects the authenticated principal resolved by JwtAuthGuard.
-// Usage: someHandler(@CurrentUser() user: AuthUser) { ... }
+// Injects the principal resolved by JwtAuthGuard.
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): AuthUser => {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>();

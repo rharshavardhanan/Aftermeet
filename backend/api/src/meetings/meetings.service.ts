@@ -63,9 +63,8 @@ export class MeetingsService {
     return { ok: true };
   }
 
-  // The core flow: transcript -> AI engine -> persist meeting/transcript/output/
-  // tasks atomically, enforcing the free-plan limit. Ported from the monolith
-  // server action processMeeting.
+  // The core flow: transcript -> AI engine -> persist meeting, transcript,
+  // output and tasks in one transaction, enforcing the free-plan limit.
   async process(
     userId: string,
     dto: ProcessMeetingDto,
@@ -187,7 +186,7 @@ export class MeetingsService {
     return { meetingId: meeting.id };
   }
 
-  // Map provider failures to friendly HTTP errors (ported from the monolith).
+  // Map provider failures to friendly HTTP errors.
   private translateAiError(err: unknown): HttpException {
     const msg = err instanceof Error ? err.message : String(err ?? '');
     if (isQuotaError(err)) {

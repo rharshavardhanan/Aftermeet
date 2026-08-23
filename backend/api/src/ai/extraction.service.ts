@@ -30,8 +30,7 @@ export interface ExtractResult {
 
 const MAX_CHARS = 48_000;
 
-// Ported from the monolith's lib/ai/extract.ts: enforced JSON output, schema
-// validation, retries, and Gemini -> Groq quota fallback.
+// Enforced JSON output, schema validation, retries, Gemini -> Groq on quota.
 @Injectable()
 export class ExtractionService {
   async extract(input: ExtractInput): Promise<ExtractResult> {

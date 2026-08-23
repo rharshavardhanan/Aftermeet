@@ -18,9 +18,7 @@ import { TranscriptionService } from './transcription.service';
 export class TranscriptionController {
   constructor(private readonly transcription: TranscriptionService) {}
 
-  // Audio in -> ffmpeg chunking -> per-chunk auto code-switch transcription
-  // -> stitch -> refine. Fully automatic: detects & preserves every language.
-  // Large uploads are streamed to disk (not RAM) and removed afterwards.
+  // Large uploads stream to disk rather than RAM, and are removed afterwards.
   @Post('transcribe')
   @UseInterceptors(
     FileInterceptor('audio', {

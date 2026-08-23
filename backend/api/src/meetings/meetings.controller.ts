@@ -23,7 +23,6 @@ export class MeetingsController {
     return this.meetings.list(user.id);
   }
 
-  // Transcript in -> AI analysis -> persisted meeting + tasks.
   @Post()
   process(@CurrentUser() user: AuthUser, @Body() dto: ProcessMeetingDto) {
     return this.meetings.process(user.id, dto);

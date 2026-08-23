@@ -1,8 +1,5 @@
-/**
- * Race a promise against a timeout. The Gemini SDK has no per-call timeout, so
- * a hung request would otherwise hang the whole HTTP handler. On timeout this
- * rejects with a clear, retry-friendly error (callers already retry/fallback).
- */
+// Race a promise against a timeout. The Gemini SDK has no per-call timeout, so
+// a hung request would otherwise hang the whole HTTP handler.
 export async function withTimeout<T>(
   promise: Promise<T>,
   ms: number,
@@ -22,7 +19,6 @@ export async function withTimeout<T>(
   }
 }
 
-// Default ceilings (ms). Generous enough for long transcripts/audio, short
-// enough to fail fast and let the fallback chain take over.
+// Ceilings (ms): long enough for real audio, short enough to fail over.
 export const AI_TIMEOUT_MS = 60_000;
 export const TRANSCRIBE_TIMEOUT_MS = 120_000;

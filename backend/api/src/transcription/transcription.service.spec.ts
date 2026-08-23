@@ -13,6 +13,7 @@ jest.mock('../ai/providers', () => ({
   gemini: () => ({ getGenerativeModel: () => ({ generateContent: geminiGenerate }) }),
   openai: () => ({ audio: { transcriptions: { create: jest.fn() } } }),
   GROQ_MODEL: 'llama',
+  GROQ_STT_MODEL: 'whisper-large-v3-turbo',
   GEMINI_MODEL: 'gemini',
   OPENAI_TRANSCRIBE_MODEL: 'whisper-1',
 }));
@@ -63,41 +64,54 @@ describe('TranscriptionService.transcribe', () => {
     groqCfg.mockReturnValue(true);
   });
 
-  it('stitches chunks in order and refines (Gemini primary)', async () => {
-    // Per-chunk transcription identifies the chunk from its audio bytes
-    // (so the assertion is robust to concurrent completion order). The refine
-    // pass (string arg) echoes its input wrapped in REFINED(...).
-    geminiGenerate.mockImplementation(async (arg: unknown) => {
-      if (typeof arg === 'string') return geminiReply(`REFINED(${arg})`);
-      const parts = arg as Array<{ inlineData?: { data: string } }>;
-      const b64 = parts[1].inlineData!.data;
-      const content = Buffer.from(b64, 'base64').toString(); // "audio-0"
-      return geminiReply(`chunk-${content.split('-')[1]}`);
+  it('transcribes chunks with Groq Whisper, stitches in order, then refines', async () => {
+    // Groq identifies the chunk from the uploaded filename, so the assertion is
+    // robust to concurrent completion order. Refine (Gemini) echoes REFINED(...).
+    groqCreate.mockImplementation(async (arg: { file: { name: string } }) => {
+      const n = Number(arg.file.name.match(/chunk_0*(\d+)/)![1]);
+      return { text: `chunk-${n}` };
     });
+    geminiGenerate.mockImplementation(async (arg: unknown) =>
+      geminiReply(`REFINED(${String(arg)})`),
+    );
     const { svc } = fakeChunking(2);
     const service = new TranscriptionService(svc);
 
     const result = await service.transcribe('/in.webm', 'audio/webm');
 
-    // Order preserved (chunk-0 before chunk-1) and refine ran over the stitch.
     expect(result.text).toBe('REFINED(chunk-0\n\nchunk-1)');
     expect(result.language).toBeNull();
+    // Groq is primary: Gemini is never asked to transcribe, only to refine.
+    expect(geminiGenerate).toHaveBeenCalledTimes(1);
   });
 
-  it('falls back to Whisper (no language pin) when Gemini fails for a chunk', async () => {
-    geminiGenerate.mockRejectedValue(new Error('gemini down')); // all gemini calls fail
-    groqCreate.mockResolvedValue({ text: 'whisper-text' });
+  it('sends the configured GROQ_STT_MODEL and never pins a language', async () => {
+    groqCreate.mockResolvedValue({ text: 'hello' });
+    geminiGenerate.mockImplementation(async (arg: unknown) => geminiReply(String(arg)));
     const { svc } = fakeChunking(1);
     const service = new TranscriptionService(svc);
 
     await service.transcribe('/in.webm', 'audio/webm');
 
-    expect(groqCreate).toHaveBeenCalled();
-    // CRITICAL: Whisper must never be pinned to a language.
     const callArg = groqCreate.mock.calls[0][0];
+    expect(callArg.model).toBe('whisper-large-v3-turbo');
+    // CRITICAL: auto-detect handles code-switching; pinning breaks it.
     expect(callArg).not.toHaveProperty('language');
     expect(callArg).not.toHaveProperty('prompt');
-    expect(callArg.model).toBe('whisper-large-v3');
+  });
+
+  it('falls back to Gemini when Groq fails for a chunk', async () => {
+    groqCreate.mockRejectedValue(new Error('groq down'));
+    geminiGenerate.mockImplementation(async (arg: unknown) =>
+      geminiReply(typeof arg === 'string' ? arg : 'gemini-text'),
+    );
+    const { svc } = fakeChunking(1);
+    const service = new TranscriptionService(svc);
+
+    const result = await service.transcribe('/in.webm', 'audio/webm');
+
+    expect(groqCreate).toHaveBeenCalled();
+    expect(result.text).toContain('gemini-text');
   });
 
   it('marks a chunk unintelligible when both engines fail twice, keeping others', async () => {

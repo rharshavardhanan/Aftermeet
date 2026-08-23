@@ -1,7 +1,7 @@
-// Meeting-to-Tasks — data model (BACKEND API copy)
-// Synced copy of backend/prisma/schema.prisma kept local to the NestJS app so
-// `prisma generate` is deterministic. Keep in sync until Phase 7 decommissions
-// the monolith, after which this becomes the single source of truth.
+// Meeting-to-Tasks — data model (backend API copy)
+// Deliberate duplicate of backend/prisma/schema.prisma. Prisma resolves its
+// client output from the schema's directory, so a shared schema would generate
+// into the repo root instead of this package. Any model change goes in both.
 // Postgres (Supabase). Pooled URL for the app, direct URL for migrations.
 
 generator client {

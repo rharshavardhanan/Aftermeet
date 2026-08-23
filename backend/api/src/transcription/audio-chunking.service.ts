@@ -5,10 +5,9 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import ffmpegPath from 'ffmpeg-static';
 
-// One ffmpeg pass normalizes ANY input (webm/m4a/mp3/wav…) to a uniform,
-// STT-friendly format AND splits it into fixed-length segments. Normalizing to
-// mono 16 kHz MP3 also repairs the flaky webm headers MediaRecorder produces
-// and shrinks each chunk well under every engine's upload limit.
+// One ffmpeg pass both normalizes the input and segments it. Mono 16 kHz MP3
+// also repairs the flaky webm headers MediaRecorder produces, and keeps each
+// chunk well under every engine's upload limit.
 export const SEGMENT_SECONDS = 300;
 const CHUNK_RE = /^chunk_\d+\.mp3$/;
 
@@ -40,8 +39,7 @@ export interface ChunkResult {
 
 @Injectable()
 export class AudioChunkingService {
-  // Split an audio file into ordered, normalized MP3 segments. Short audio
-  // yields exactly one chunk. The caller MUST invoke `cleanup()` when done.
+  // Short audio yields exactly one chunk. The caller must invoke `cleanup()`.
   async chunk(inputPath: string): Promise<ChunkResult> {
     const outDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aftermeet-chunks-'));
     const cleanup = async () => {

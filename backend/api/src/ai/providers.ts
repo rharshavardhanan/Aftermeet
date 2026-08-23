@@ -1,8 +1,7 @@
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// AI provider clients + capability flags. Ported from the monolith's lib/openai,
-// lib/groq, lib/gemini. Lazily constructed so the app boots without keys.
+// Lazily constructed so the app boots without any provider key.
 
 let openaiClient: OpenAI | null = null;
 export function openai(): OpenAI {
@@ -46,7 +45,7 @@ export function isGeminiConfigured(): boolean {
   return Boolean(process.env.GEMINI_API_KEY);
 }
 
-/** True if ANY supported AI provider is configured. Else demo mode. */
+/** True if any provider is configured. Otherwise the app runs in demo mode. */
 export function isAiConfigured(): boolean {
   return Boolean(
     process.env.GROQ_API_KEY ||

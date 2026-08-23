@@ -3,9 +3,8 @@ import * as jwt from 'jsonwebtoken';
 import { AppJwtPayload, AuthUser } from './auth-user';
 
 // Verifies the short-lived HS256 app JWT minted by the frontend's /api/token
-// route (signed with the shared API_JWT_SECRET). This is the bridge from the
-// existing NextAuth+Google login to the standalone backend; it can later be
-// swapped for Supabase/JWKS verification without changing JwtAuthGuard.
+// route, signed with the shared API_JWT_SECRET. This is what bridges the
+// NextAuth+Google login to this backend.
 @Injectable()
 export class TokenService {
   private secret(): string {

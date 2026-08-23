@@ -1,4 +1,4 @@
-/** Retry an async op with exponential backoff. Ported from the monolith. */
+/** Retry an async op with exponential backoff. */
 export async function withRetry<T>(
   fn: () => Promise<T>,
   { retries = 2, baseDelayMs = 600 }: { retries?: number; baseDelayMs?: number } = {},
