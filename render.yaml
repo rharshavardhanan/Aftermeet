@@ -1,56 +1,12 @@
-# Render Blueprint for Aftermeet (Next.js full-stack: web UI + server actions +
-# API routes). Deploy: Render Dashboard → New → Blueprint → pick this repo.
-# Secrets (sync: false) are entered once in the Render dashboard, never committed.
+# Render Blueprint — backend only. The Next.js frontend deploys to Vercel;
+# see docs/DEPLOYMENT.md for the order the two have to be brought up in.
+# Values marked `sync: false` are entered once in the Render dashboard.
 services:
-  - type: web
-    name: aftermeet
-    runtime: node
-    plan: free # upgrade to "starter" to avoid cold-start spin-down
-    region: oregon # pick the region closest to your Supabase project
-    rootDir: frontend/web # Next.js app lives here; prisma schema is at ../../backend/prisma
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
-    healthCheckPath: /
-    autoDeploy: true
-    envVars:
-      - key: NODE_VERSION
-        value: "20.18.0"
-      # ── Database (Supabase) ─────────────────────────────────────
-      - key: DATABASE_URL
-        sync: false
-      - key: DIRECT_URL
-        sync: false
-      # ── Auth ────────────────────────────────────────────────────
-      - key: NEXTAUTH_SECRET
-        sync: false
-      - key: NEXTAUTH_URL # set to your Render URL, e.g. https://aftermeet.onrender.com
-        sync: false
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: GOOGLE_CLIENT_SECRET
-        sync: false
-      # ── AI providers ────────────────────────────────────────────
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        value: llama-3.3-70b-versatile
-      - key: GROQ_STT_MODEL
-        value: whisper-large-v3-turbo
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: GEMINI_MODEL
-        value: gemini-2.0-flash
-      # ── Public ──────────────────────────────────────────────────
-      - key: NEXT_PUBLIC_APP_URL # same as your Render URL
-        sync: false
-
-  # Standalone NestJS backend (Phase 0 of the frontend/backend split). Deploys
-  # from backend/api/. The frontend talks to it via NEXT_PUBLIC_API_BASE_URL.
   - type: web
     name: aftermeet-api
     runtime: node
-    plan: free
-    region: oregon
+    plan: free # free instances spin down when idle; first request after that is slow
+    region: oregon # match your Supabase region
     rootDir: backend/api
     buildCommand: npm install && npm run build
     startCommand: npm run start:prod
@@ -59,11 +15,51 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20.18.0"
-      - key: PORT
-        value: "4001"
-      - key: DATABASE_URL
+
+      # Render injects PORT and expects the process to bind it; main.ts reads it.
+      - key: DATABASE_URL # Supabase pooler URI, port 6543, ?pgbouncer=true
         sync: false
-      - key: DIRECT_URL
+      - key: DIRECT_URL # Supabase direct URI, port 5432 (migrations)
         sync: false
-      - key: CORS_ORIGINS # set to your Vercel frontend origin once deployed
+
+      # Comma-separated origins. Set to your Vercel URL once the frontend is up.
+      # meet.google.com and *.zoom.us are always allowed by pattern in main.ts.
+      - key: CORS_ORIGINS
+        sync: false
+      # Must be byte-identical to API_JWT_SECRET on Vercel.
+      - key: API_JWT_SECRET
+        sync: false
+      - key: WEB_APP_URL # Vercel URL; Stripe redirects back here
+        sync: false
+
+      # Transcription + extraction. Groq alone is enough to run the whole app.
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: GROQ_STT_MODEL
+        value: whisper-large-v3-turbo
+      - key: GEMINI_API_KEY # optional fallback
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      - key: OPENAI_API_KEY # optional fallback
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-2024-11-20
+      - key: OPENAI_TRANSCRIBE_MODEL
+        value: whisper-1
+
+      # Billing. Point the Stripe webhook at <backend>/billing/webhook.
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_PRO_MONTHLY
+        sync: false
+
+      # Same OAuth client as the frontend — used to refresh the Docs export token.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
         sync: false

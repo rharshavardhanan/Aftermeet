@@ -1,127 +1,119 @@
 # Architecture — three frontends, one backend
 
-Aftermeet ships **three client surfaces** that all talk to **one backend**.
-The backend is the source of truth; every client is a thin frontend over it.
-
-> **Migration status (2026-06).** The backend has been extracted into a
-> standalone **NestJS** service at `backend/api/` (Render), with the Next.js app
-> as the frontend (Vercel). Auth bridges the existing NextAuth+Google login via a
-> short-lived HS256 app JWT (`/api/token` → backend `JwtAuthGuard`), shared
-> `API_JWT_SECRET`. Spec: `docs/superpowers/specs/2026-06-15-frontend-backend-split-design.md`.
->
-> **Done & on the backend** (all bearer-guarded, 19 e2e tests):
-> auth/`/me`, meetings (list/get/delete/**process** = full AI pipeline), tasks,
-> **transcription** (`/transcribe` + `/languages`, 45-language two-tier Whisper/Gemini
-> with full `large-v3` for non-English), extension (`/extension/process` + `/session`),
-> billing (Stripe checkout + raw-body webhook), Google Docs export.
->
-> **Frontend write paths repointed** to the backend (create meeting, transcribe,
-> task toggle, checkout, export). Reads still render server-side from the shared
-> Supabase DB on the monolith — seamless because both hit the same database.
->
-> **Remaining cutover (needs live login + the real Vercel/Render deploy):**
-> 1. Repoint server-rendered reads (dashboard/history/workspace/settings/billing)
->    to the backend via a server-side token client.
-> 2. Repoint the topbar extension-status poll to `<backend>/extension/session`.
-> 3. After (1)+(2) verify in a logged-in session, delete the now-superseded
->    monolith routes: `app/api/{transcribe,extension/*,stripe/*,google/export-doc}`
->    and `app/actions/{meetings,tasks}` (keep `app/api/auth/*` and `app/api/token`).
-> 4. Point the Stripe webhook at `<backend>/billing/webhook`; set the backend
->    Render env vars (see `backend/api/.env.example`).
-
-> **Repo layout.** Client code lives under `frontend/` (`frontend/web/` is the
-> Next.js app that *also* hosts the backend; `frontend/extension/` is the Chrome
-> extension). The shared data layer lives under `backend/` (`backend/prisma/`,
-> `backend/supabase/`). Paths below are written relative to `frontend/web/` unless
-> prefixed (e.g. `backend/prisma/schema.prisma`).
+Aftermeet ships **three client surfaces** over **one NestJS backend**. The
+backend is the source of truth: it owns the database, every write, and all AI.
+The clients render and authenticate.
 
 ```
-                       ┌──────────────────────────────────────────┐
-   3 FRONTENDS         │                ONE BACKEND                │
-                       │                                           │
-  ┌───────────────┐    │   Next.js server (app/api + app/actions)  │
-  │  WEBSITE      │────┤        │                                  │
-  │  app/page.tsx │    │        ▼                                  │
-  │  + marketing  │    │   Prisma  ──────────►  Supabase Postgres  │
-  └───────────────┘    │   (lib/prisma.ts)      (supabase/*)       │
-                       │        ▲                                  │
-  ┌───────────────┐    │        │   NextAuth (Google)              │
-  │  APP (mobile) │────┤        │   OpenAI / Gemini (lib/ai)        │
-  │  android/ +   │    │        │   Stripe                         │
-  │  (app)/ routes│    │        │                                  │
-  └───────────────┘    │                                           │
-                       │                                           │
-  ┌───────────────┐    │                                           │
-  │  EXTENSION    │────┤   /api/transcribe                         │
-  │  extension/   │    │   /api/extension/process                  │
-  │  (Chrome MV3) │    │   /api/extension/session                  │
-  └───────────────┘    └──────────────────────────────────────────┘
+   3 FRONTENDS                          ONE BACKEND (NestJS, :4001)
+
+  ┌────────────────┐                   ┌──────────────────────────────┐
+  │ WEB            │  bearer JWT       │  /transcribe   ffmpeg + ASR  │
+  │ Next.js        │──────────────────►│  /meetings     extraction    │
+  │ (Vercel)       │                   │  /tasks  /dashboard  /me     │
+  └────────────────┘                   │  /extension/{process,session}│
+                                       │  /billing/{checkout,webhook} │
+  ┌────────────────┐                   │  /google/export-doc          │
+  │ ANDROID        │  WebView of the   │  /health                     │
+  │ Capacitor      │  deployed web app │             │                │
+  └────────────────┘                   │             ▼                │
+                                       │  Prisma ──► Supabase Postgres│
+  ┌────────────────┐  bearer JWT       │             ▲                │
+  │ EXTENSION      │──────────────────►│             │                │
+  │ Chrome MV3     │                   └─────────────┼────────────────┘
+  └────────────────┘                                 │
+                                                     │
+        Next.js also reads this DB directly for server-rendered pages
 ```
 
-## The one backend
+## The split
 
-Everything server-side lives in the Next.js app and is shared by all clients:
+The backend was extracted from what began as a Next.js monolith. The frontend
+keeps exactly two API routes:
 
-| Concern        | Where                                   |
-|----------------|-----------------------------------------|
-| Database       | **Supabase Postgres** via Prisma (`supabase/`, `prisma/schema.prisma`, `lib/prisma.ts`) |
-| Auth           | NextAuth + Google, DB sessions (`lib/auth.ts`, `app/api/auth/*`) |
-| AI extraction  | `lib/ai/*` (provider-swappable; demo mode with no key) |
-| Server actions | `app/actions/*` (meetings, tasks, settings, onboarding) |
-| HTTP API       | `app/api/*` (transcribe, extension/process, extension/session, stripe/*) |
+| Route | Why it stays |
+|---|---|
+| `app/api/auth/[...nextauth]` | NextAuth needs a same-origin callback |
+| `app/api/token` | Mints the short-lived HS256 bearer the backend verifies |
 
-The DB is described once in `prisma/schema.prisma` and mirrored exactly in
-`supabase/migrations/*` — see `supabase/README.md` to provision it. All three
-clients read/write the same rows through this one server, so they stay in sync
-automatically (a task created from the extension shows up on the website and the
-mobile app, because there is only one database).
+Everything else — transcription, extraction, tasks, billing, Docs export,
+extension endpoints — lives in `backend/api/`.
+
+### Auth across the boundary
+
+Cookies do not cross origins, so the extension and the deployed frontend cannot
+share a NextAuth session cookie with the backend. Instead:
+
+1. The user signs in with Google; NextAuth writes a DB session as usual.
+2. `/api/token` signs a 5-minute HS256 JWT with `API_JWT_SECRET`.
+3. The client sends it as `Authorization: Bearer …`.
+4. The backend's `JwtAuthGuard` verifies it with the same shared secret and
+   attaches the principal via `@CurrentUser()`.
+
+`lib/api-client.ts` does this for browser code; `lib/server-api.ts` signs
+directly from the session for React Server Components, skipping the round trip.
+
+The extension gets a token by hand: the user opens `/extension/connect`, copies
+it, and pastes it into the popup.
+
+## What still reads Prisma directly
+
+The server-rendered pages (dashboard, history, workspace, settings, billing) and
+NextAuth still query Supabase through `lib/prisma.ts` rather than calling the
+backend. This is safe — one database, and reads are ownership-scoped — but it
+means the frontend needs `DATABASE_URL` and the Prisma schema at build time.
+
+Moving those reads onto `serverApi()` is the last piece of the split. It is not
+required for correctness, and it is deliberately not done yet.
+
+## Data
+
+The model is described in `backend/prisma/schema.prisma` and mirrored in
+`backend/supabase/migrations/*` — see `backend/supabase/README.md` to provision.
+
+`backend/api/prisma/schema.prisma` is a byte-identical copy. Prisma resolves its
+generated client relative to the schema's own directory, so pointing the backend
+at the shared file would emit the client into the repo root instead of the
+backend package. **A model change goes in both files.**
 
 ## The three frontends
 
-### 1. Website (marketing)
-- `app/page.tsx` + `components/marketing/*` + `app/extension/page.tsx`.
-- Public, unauthenticated. Sells the product, links into the app.
+### Web — `frontend/web/`
+Marketing (`app/page.tsx`) is public. The product lives behind auth in
+`app/(app)/*`. Server components read Prisma; client components write through
+`lib/api-client.ts` to the backend.
 
-### 2. App
-- **Web app**: auth-gated `app/(app)/*` (dashboard, workspace, history, settings,
-  billing) rendered by the same Next.js server.
-- **Mobile app**: `android/` — a Capacitor WebView shell that loads the deployed
-  web app over HTTPS (`capacitor.config.ts`, `CAP_SERVER_URL`). One codebase,
-  native wrapper. Build: `npm run cap:sync`.
+### Android — `frontend/web/android/`
+A Capacitor WebView shell that loads the deployed web app over HTTPS
+(`capacitor.config.ts`, `CAP_SERVER_URL`). No second codebase. `npm run cap:sync`.
 
-### 3. Extension (Chrome MV3)
-- `extension/*`. Captures Zoom/Meet audio, transcribes live, and posts to the
-  **same backend** (`/api/transcribe`, `/api/extension/process`,
-  `/api/extension/session`). Reuses the web session cookie — no separate login.
-- Point it at your backend by editing `APP_ORIGIN` in `extension/config.js`,
-  `extension/content.js`, `extension/popup.js`. Package: `npm run ext:build`.
+### Extension — `frontend/extension/`
+Chrome MV3. `background.js` gets a `tabCapture` stream id, an offscreen document
+runs `MediaRecorder` (MV3 service workers cannot), and `content.js` renders the
+in-call panel. The Web Speech API drives a live preview; on stop the recorded
+blob goes to `POST {apiBase}/transcribe` for the real transcript, then to
+`POST {apiBase}/extension/process` for extraction. `npm run ext:build`.
 
-## How the clients stay synced to the backend
+While capturing it posts heartbeats to `/extension/session`, which lights the
+**"Extension: connected"** badge in the web topbar — the visible proof that all
+three surfaces share one backend.
 
-| Client    | Talks to backend via                  | Auth                       |
-|-----------|---------------------------------------|----------------------------|
-| Website   | server components / actions (in-proc) | public                     |
-| Web app   | server actions + `app/api/*`          | NextAuth session cookie    |
-| Mobile    | same web app over HTTPS (WebView)     | NextAuth session cookie    |
-| Extension | `fetch` to `app/api/*` (CORS)         | shared NextAuth cookie     |
+## Client → backend summary
 
-The extension also reports a live capture session to `/api/extension/session`,
-which lights up the **"Extension: connected"** badge in the web app topbar — a
-concrete demonstration that all three surfaces share one backend.
+| Client | Talks to backend via | Auth |
+|---|---|---|
+| Marketing | nothing — static | public |
+| Web app (server) | `serverApi()`, plus direct Prisma reads | session-signed JWT |
+| Web app (browser) | `lib/api-client.ts` | JWT from `/api/token` |
+| Android | the web app, in a WebView | NextAuth cookie |
+| Extension | `fetch` to `apiBase` (CORS) | pasted bearer token |
 
 ## Run it
 
 ```bash
-# 1. Backend DB: provision Supabase, apply backend/supabase/migrations/* (see backend/supabase/README.md)
-# 2. Env: cd frontend/web && cp .env.example .env  and fill DATABASE_URL / DIRECT_URL (+ optional keys)
-cd frontend/web        # the Next.js app (frontend + backend) is one npm package here
-npm install
-npm run db:generate
-npm run dev            # website + app + API on http://localhost:4000
-
-npm run ext:build      # → ../extension/dist/*.zip  (load unpacked from frontend/extension/)
-npm run cap:sync       # → Android shell of the deployed app
+cd backend/api  && npm install && npm run start:dev   # :4001
+cd frontend/web && npm install && npm run dev         # :4000
 ```
 
-See `HANDOFF.md` for the full feature inventory, AI provider swap, and key
-security; see `supabase/README.md` for database setup.
+Deployment (Render + Vercel): **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
+Feature inventory and provider notes: `HANDOFF.md`.

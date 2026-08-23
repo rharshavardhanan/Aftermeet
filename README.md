@@ -1,9 +1,12 @@
 # Aftermeet
 
-**Turn meetings into execution.** A calm, premium workspace that reads meeting
-transcripts and hands back the things that matter — action items, decisions,
-deadlines, risks, follow-up emails, and professional Meeting Minutes — across
-**web**, a **Chrome extension**, and an **Android** shell.
+**Turn meetings into execution.** Drop in meeting audio — or a pasted transcript
+— and get back a clean transcript, a summary, and the things that actually need
+doing: action items with owners and dates, decisions, risks, a follow-up email,
+and formatted Meeting Minutes.
+
+Three surfaces share one backend: a **web app**, a **Chrome extension** that
+runs inside Zoom and Google Meet, and an **Android** shell.
 
 > Built to feel like Linear / Notion / Superhuman — not a chatbot. There is no
 > chat box anywhere. Intelligence is embedded in the workflow.
@@ -14,136 +17,187 @@ deadlines, risks, follow-up emails, and professional Meeting Minutes — across
 
 | Layer | Choice |
 |-------|--------|
-| Framework | Next.js 15 (App Router) + React 19 + TypeScript |
+| Frontend | Next.js 15 (App Router) + React 19 + TypeScript |
+| Backend | NestJS 11 — owns every write path and all AI |
 | UI | Tailwind CSS + shadcn-style primitives (Radix) + Inter |
 | Data | PostgreSQL (Supabase) + Prisma ORM |
-| Auth | NextAuth v4 — Google OAuth only (Prisma adapter, DB sessions) |
-| AI | OpenAI (`gpt-4o` extraction + `whisper-1` transcription) |
-| Audio | MediaRecorder + Web Speech API + Whisper |
+| Auth | NextAuth v4 — Google OAuth only; the backend takes a short-lived HS256 bearer minted from that session |
+| Speech-to-text | Groq Whisper (`whisper-large-v3-turbo`), with Gemini and OpenAI Whisper as fallbacks |
+| Summarisation | Groq `llama-3.3-70b-versatile` / Gemini `gemini-2.0-flash` |
+| Audio prep | ffmpeg (`ffmpeg-static`) — normalise + segment |
 | Payments | Stripe Checkout + webhooks |
 | Mobile | Capacitor + Gradle (Android) |
 | Extension | Chrome MV3 (tabCapture + offscreen) |
 
 ---
 
-## Project layout
+## How a meeting becomes tasks
 
-The repo splits into **frontend** (client surfaces) and **backend** (data layer):
+```
+audio ──► POST /transcribe  (NestJS)
+            │
+            ├─ ffmpeg: normalise to mono 16 kHz MP3, split into 5-min chunks
+            ├─ per chunk, up to 4 at a time: Groq Whisper ─► Gemini ─► OpenAI Whisper
+            ├─ stitch chunks back in order
+            └─ refine: LLM adds punctuation and speaker labels, windowed so
+               nothing is dropped on long calls
+            │
+            ▼
+       transcript ──► POST /meetings  (NestJS)
+            │
+            ├─ extraction: strict JSON schema, Zod-validated, retried on failure
+            └─ persist Meeting + Transcript + AiOutput + Task rows in one transaction
+```
+
+Nothing is pinned to a language. Chunks are transcribed with auto-detect, which
+handles code-switching — a sentence that starts in Tamil and ends in English
+stays that way instead of being flattened to one language.
+
+A chunk that fails every engine twice becomes `[unintelligible segment]` rather
+than failing the whole transcript, so one bad minute of a two-hour call costs
+you one minute.
+
+---
+
+## Project layout
 
 ```
 frontend/
-  web/                       The Next.js full-stack app (also hosts the API + server actions)
+  web/                     Next.js app — UI, auth, and reads
     app/
-      page.tsx               Landing page
-      login/                 Google sign-in
-      onboarding/            3-step wizard
-      (app)/                 Authenticated shell (sidebar + topbar)
-        dashboard/           Stats, pending tasks, insights, recent meetings
-        workspace/           New meeting + 3-panel meeting view ([id])
-        history/  settings/  billing/
-      extension/             Extension install/onboarding page
-      actions/               Server actions (meetings, tasks, onboarding, settings)
+      page.tsx             Landing
+      login/  onboarding/
+      (app)/               Authenticated shell
+        dashboard/  workspace/  history/  settings/  billing/
+      actions/             Server actions (onboarding, settings)
       api/
         auth/[...nextauth]/  NextAuth
-        transcribe/          Whisper endpoint
-        extension/process/   Extension → extraction (credentialed CORS)
-        stripe/{checkout,webhook}/
-    components/              ui/ (primitives), app/, workspace/, marketing/, brand/
-    lib/
-      ai/                    schema (zod + json-schema), prompt, extract, transcribe, mock
-      auth.ts prisma.ts openai.ts stripe.ts export.ts plans.ts validations.ts utils.ts
-    android/                 Capacitor Android shell (mobile = WebView of the web app)
-    mobile/  capacitor.config.ts
-    package.json  next.config.ts  tsconfig.json  .env
-  extension/                 Chrome MV3 extension (see extension/README.md)
+        token/               Mints the backend bearer
+        extension/session/   Extension session ping
+    components/  lib/  hooks/
+    android/  mobile/      Capacitor Android shell
+  extension/               Chrome MV3 extension
 backend/
-  prisma/schema.prisma       Full data model
-  supabase/                  Postgres migrations + config (see supabase/README.md)
+  api/                     NestJS — transcription, extraction, tasks, billing, export
+    src/
+      transcription/       ffmpeg chunking + multi-engine ASR + refine
+      ai/                  prompt, schema, extraction, providers, retry, timeout
+      meetings/  tasks/  dashboard/  extension/  google/  billing/  auth/
+  prisma/schema.prisma     Data model
+  supabase/                Migrations + config
 ```
 
-> The Next.js app is a self-contained npm package under `frontend/web/` — run all
-> `npm` commands from there. The DB schema lives in `backend/`; `frontend/web/package.json`
-> points Prisma at it via the `prisma.schema` key.
+The frontend holds no AI code and no provider keys. It renders, authenticates,
+and reads; the backend does the work.
+
+> `backend/api/prisma/schema.prisma` is a deliberate copy of
+> `backend/prisma/schema.prisma`. Prisma resolves its client output from the
+> schema's own directory, so sharing one file would generate into the repo root
+> instead of the backend package. Model changes go in both.
 
 ---
 
 ## Quick start
 
+Two processes. Backend first — the frontend calls it on load.
+
 ```bash
-cd frontend/web               # the Next.js app lives here
+# terminal 1 — backend on :4001
+cd backend/api
 npm install
-cp .env.example .env          # fill in values (see below)
-npm run db:generate
-npm run db:push               # push schema to your Postgres (backend/prisma/schema.prisma)
-npm run dev                   # http://localhost:4000
+cp .env.example .env          # fill in DATABASE_URL, DIRECT_URL, API_JWT_SECRET, GROQ_API_KEY
+npm run start:dev
+
+# terminal 2 — frontend on :4000
+cd frontend/web
+npm install
+cp .env.example .env          # same DB + the SAME API_JWT_SECRET, plus Google OAuth
+npm run db:push               # create the schema
+npm run dev
 ```
 
-### Demo mode (no keys)
-Without `OPENAI_API_KEY` the app runs in **demo mode**: a deterministic local
-extractor produces realistic tasks/summary/MoM from your pasted transcript, so
-you can click through the entire product end-to-end. Audio transcription is the
-only feature that needs a real key.
+`API_JWT_SECRET` must be byte-identical in both files or every backend call
+returns 401. Generate one with:
 
-### Environment
-See [`.env.example`](.env.example). To go fully live you need:
-- **Supabase Postgres** → `DATABASE_URL`, `DIRECT_URL`
-- **Google OAuth** → `GOOGLE_CLIENT_ID/SECRET` (redirect URI `…/api/auth/callback/google`)
-- **NextAuth** → `NEXTAUTH_SECRET` (`openssl rand -base64 32`), `NEXTAUTH_URL`
-- **OpenAI** → `OPENAI_API_KEY`
-- **Stripe** (optional) → `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY`
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
+
+Check the wiring:
+
+```bash
+curl localhost:4001/health
+# {"status":"ok","db":"up","ai":"up"}
+```
+
+### Demo mode
+
+With no AI key the backend falls back to a deterministic local extractor, so you
+can click through the whole product with a pasted transcript. Audio
+transcription is the one feature that genuinely needs a key — Groq's free tier
+covers it.
 
 ---
 
 ## The AI engine
 
-`lib/ai/extract.ts` enforces a strict JSON-schema response, validates it with
-Zod, and retries with backoff. The system prompt (`lib/ai/prompt.ts`) is tuned to:
+`backend/api/src/ai/` holds the whole thing. `extraction.service.ts` enforces a
+strict JSON-schema response, validates it with Zod, and retries with backoff.
+The system prompt (`ai/prompt.ts`) is tuned to:
 
 - never invent tasks, owners, or dates,
 - separate **decisions** (committed) from **discussion** (explored),
 - attach a **confidence score** and a **source quote** to every action item,
-- emit a ready-to-send follow-up email and a clean MoM.
+- emit a ready-to-send follow-up email and clean Meeting Minutes.
 
-Every meeting persists a `Transcript`, an `AiOutput`, and individual `Task`
-rows. Exports: copy, Markdown download, and print-to-PDF (`lib/export.ts`).
+Every provider call is wrapped in a timeout — the Gemini SDK has none of its own
+— and falls through to the next engine rather than failing the request.
 
----
-
-## Surfaces
-
-- **Web** — the full product. Paste / upload / record → analyze → manage tasks.
-- **Chrome extension** — live notes inside Zoom & Google Meet. See
-  [`extension/README.md`](extension/README.md).
-- **Android** — Capacitor WebView shell. See [`android/README.md`](android/README.md).
+Exports: copy, Markdown, print-to-PDF, and Google Docs.
 
 ---
 
-## What's wired vs. what needs your keys
+## Deployment
 
-| Area | Status |
-|------|--------|
-| Design system, all pages, navigation | ✅ Complete |
-| Auth (Google), workspace provisioning, onboarding | ✅ Code complete — needs Google + DB creds |
-| Transcript → tasks/decisions/MoM/email | ✅ Complete (real with `OPENAI_API_KEY`, demo without) |
-| Tasks (complete/edit/archive), exports | ✅ Complete |
-| Stripe checkout + webhook + plan limits | ✅ Code complete — needs Stripe keys |
-| Whisper upload/record transcription | ✅ Code complete — needs `OPENAI_API_KEY` |
-| Chrome extension (MV3 capture pipeline) | ✅ Loadable unpacked; point `APP_ORIGIN` at your app |
-| Android Gradle shell | ✅ Config checked in; run `npx cap add android` to generate wrapper, then build |
+Backend on Render, frontend on Vercel. The two reference each other's URLs, so
+the order matters — see **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for the
+full runbook, the env var table per dashboard, and the CORS handshake.
 
 ---
 
-## Scripts
+## Tests
 
 ```bash
-npm run dev / build / start
-npm run typecheck          # tsc --noEmit
-npm run db:push / db:studio / db:migrate
-npx cap sync               # sync web build into native shells
+cd backend/api
+npm test                   # unit: chunking, transcription ordering, provider fallback
+npm run test:e2e           # HTTP: auth, health, transcription, extraction, domain
+npm run typecheck
+
+cd frontend/web
+npm run typecheck
 ```
+
+---
+
+## Status
+
+| Area | State |
+|------|-------|
+| Design system, pages, navigation | Complete |
+| Auth (Google), workspace provisioning, onboarding | Complete — needs Google + DB creds |
+| Audio → transcript (chunked, multilingual) | Complete — needs `GROQ_API_KEY` |
+| Transcript → tasks / decisions / MoM / email | Complete — real with a key, demo without |
+| Tasks, exports, Google Docs | Complete |
+| Stripe checkout + webhook + plan limits | Complete — needs Stripe keys |
+| Chrome extension (MV3 capture) | Loadable unpacked; set `appOrigin` + `apiBase` in the popup |
+| Android Gradle shell | Config checked in; `npx cap add android` to generate the wrapper |
+
+---
 
 ## Security
 
-CSP + security headers (`next.config.ts`), credentialed CORS scoped to
-Meet/Zoom for the extension endpoint, server-side ownership checks on every
-task/meeting mutation, sanitized transcript storage, HTTPS-only WebView.
+CSP and security headers (`next.config.ts`); CORS restricted to the configured
+frontend origin plus `meet.google.com` / `*.zoom.us` for the extension;
+short-lived HS256 bearers rather than shared cookies across origins;
+server-side ownership checks on every meeting and task mutation; uploads
+streamed to disk with a 200 MB cap and deleted after processing.
