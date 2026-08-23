@@ -1,7 +1,7 @@
 # Audit cleanup, Groq-first ASR, and split deployment
 
 Date: 2026-08-23
-Status: in progress
+Status: complete, except the two `.env.example` files (see Outcomes)
 
 ## Context
 
@@ -200,3 +200,58 @@ Net: roughly **-1,300 lines, -3 runtime deps** from `frontend/web`
 - Demo video.
 - Any runtime proof requiring a database, Google OAuth client, or Groq key.
 - Cutting billing, the extension, or the Android shell (decided against).
+
+## Outcomes
+
+Verified 2026-08-23. Commands and their output:
+
+```
+backend/api:  tsc --noEmit            exit 0
+              jest                    8 passed / 8
+              jest --config e2e       19 passed / 19
+              npm run build           dist/main.js emitted
+frontend/web: tsc --noEmit            exit 0
+              npm run build           14 routes, compiled successfully
+```
+
+| Task | Result |
+|---|---|
+| 1 — dead frontend pipeline | Done. `app/api` is now NextAuth + `/api/token` only. |
+| 2 — extension language picker | Done. `config.js` deleted, `node --check` passes on all four scripts. |
+| 3 — Groq Whisper primary | Done. Engine order Groq → Gemini → OpenAI; `GROQ_STT_MODEL` honoured; Groq/OpenAI calls now wrapped in `withTimeout`. |
+| 4 — comments | Partial. `backend/api/src` 81 → 61 (-24%, short of the -30% target); `frontend/web/lib` 126 → 30 (-76%). Longest surviving block is 4 lines. Stopped at -24% on the backend because the remainder record real constraints. |
+| 5 — deploy configs | Done, except the env templates. |
+| 6 — history rewrite | Done. 42 commits, 0 Claude references, sole author is the repo owner, trees byte-identical to `backup/pre-trailer-strip`. Force-pushed. |
+| 7 — verified build | Done, output above. |
+
+### Not applied: the two `.env.example` files
+
+This session has a global deny rule on `.env*` that covers the committed
+templates as well as real secret files. Rather than route around a permission
+control, the rewritten templates were staged outside the repo. Apply with:
+
+```
+cp <scratchpad>/web.env.example frontend/web/.env.example
+cp <scratchpad>/api.env.example backend/api/.env.example
+```
+
+The substantive change is that `frontend/web/.env.example` no longer lists
+`GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY`, or `STRIPE_SECRET_KEY` —
+after Task 1 the frontend has no code that reads any of them.
+
+### Deliberately not done
+
+- Moving server-rendered reads (dashboard, history, workspace, settings,
+  billing) onto `serverApi()`. It is the last piece of the split, but the pages
+  are correct as they are and the chosen scope was dead code only.
+- Deploying. No account access; `docs/DEPLOYMENT.md` is the runbook.
+- The assignment's demo video.
+
+### One reversal worth recording
+
+Consolidating the two Prisma schemas was attempted and reverted. Prisma resolves
+its generated client from the schema file's own directory, so pointing
+`backend/api` at `backend/prisma/schema.prisma` emitted the client into the repo
+root instead of the package — which is exactly why the duplicate existed. The
+duplicate stayed; its header comment now explains the constraint instead of
+calling itself temporary.
