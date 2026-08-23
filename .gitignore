@@ -33,3 +33,7 @@ frontend/web/android/app/src/main/assets/public
 
 # extension build output
 frontend/extension/dist
+
+# deploy credentials (see scripts/deploy-vars.example.sh)
+scripts/deploy-vars.sh
+.deploy-state.json

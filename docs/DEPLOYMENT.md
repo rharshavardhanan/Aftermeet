@@ -1,8 +1,74 @@
 # Deployment — backend on Render, frontend on Vercel
 
-The two halves reference each other's URLs, so they cannot be brought up in one
-shot. Deploy the backend first with a placeholder CORS value, deploy the
-frontend against the real backend URL, then go back and fix CORS.
+Two routes. The scripted one does everything except the Google OAuth client;
+the manual one is below it, and is also the fallback when a step fails.
+
+Either way **one thing cannot be automated**: creating the Google OAuth client
+and consent screen. Google gates that behind its console, and NextAuth is
+Google-only, so nobody can sign in until it exists.
+
+---
+
+## Scripted
+
+```bash
+cp scripts/deploy-vars.example.sh scripts/deploy-vars.sh
+$EDITOR scripts/deploy-vars.sh          # fill in 7 values
+set -a; source scripts/deploy-vars.sh; set +a
+./scripts/deploy.sh
+```
+
+`scripts/deploy-vars.sh` is gitignored. The script reads credentials from the
+environment and writes none of them to disk — `.deploy-state.json` holds only
+project ids and URLs.
+
+It is re-runnable: existing resources are reused rather than duplicated. What it
+does, in order:
+
+1. Creates the Supabase project (or reuses `SUPABASE_PROJECT_REF`) and waits
+   for it to come up.
+2. Derives the pooler connection strings and **verifies them with a real
+   connection** before using them — the hostname prefix varies between
+   projects, so it tries the candidates rather than assuming.
+3. Runs `prisma db push` to create the schema.
+4. Creates the Render service with all its environment variables.
+5. Builds the web app locally and ships the result to Vercel.
+6. Backfills `CORS_ORIGINS` and `WEB_APP_URL` on Render with the real Vercel
+   origin, then redeploys.
+7. Polls `/health` and reports `db` and `ai` status.
+8. Prints the redirect URI to add in Google Cloud Console.
+
+### Why the frontend builds locally
+
+A `vercel deploy` from `frontend/web` uploads only files under that directory,
+but `frontend/web/package.json` points Prisma at
+`../../backend/prisma/schema.prisma`, outside it — the remote build would not
+find the schema. The script runs `vercel build` locally, where the whole repo is
+present, and deploys the output with `--prebuilt`.
+
+The trade-off: deploys are triggered from your machine, not by pushing to
+GitHub. To get push-to-deploy, connect the repo in the Vercel and Render
+dashboards afterwards — that needs their GitHub App authorised in a browser.
+
+### If it stops partway
+
+Every step is idempotent, so fix the cause and re-run. The two most common
+failures:
+
+- **Cannot connect to the database.** The region differs from
+  `SUPABASE_REGION`, or the password is wrong. Copy the exact strings from the
+  Supabase dashboard and re-run with `DATABASE_URL` and `DIRECT_URL` exported.
+- **Render rejects the repo.** The repo must be public, or Render's GitHub App
+  must be authorised for it.
+
+Pin `API_JWT_SECRET` and `NEXTAUTH_SECRET` in `deploy-vars.sh` after the first
+run. Regenerating them invalidates every issued token and signs everyone out.
+
+---
+
+## Manual
+
+The same steps by hand. Also the reference for what the script is doing.
 
 ## 0. Before you start
 
