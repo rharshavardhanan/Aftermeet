@@ -36,11 +36,27 @@ export async function GET() {
 
   let db: "up" | "down" = "down";
   let dbError: string | null = null;
+  let dbErrorCode: string | null = null;
+  let dbCause: string | null = null;
   try {
     await prisma.$queryRaw`SELECT 1`;
     db = "up";
   } catch (err) {
     dbError = err instanceof Error ? err.constructor.name : "UnknownError";
+    const code = (err as { errorCode?: string }).errorCode;
+    dbErrorCode = typeof code === "string" ? code : null;
+    // Classify from the message without echoing it: Prisma embeds the
+    // connection string, and P1001's text carries the host.
+    const msg = err instanceof Error ? err.message : "";
+    dbCause = /query engine|libquery|binaryTarget|not found.*engine/i.test(msg)
+      ? "prisma-client-not-generated-for-this-runtime"
+      : /can't reach database|P1001|timed out/i.test(msg)
+        ? "database-unreachable"
+        : /authentication failed|P1000/i.test(msg)
+          ? "bad-credentials"
+          : /invalid.*url|the provided database string/i.test(msg)
+            ? "malformed-connection-string"
+            : "unclassified";
   }
 
   return NextResponse.json(
@@ -48,6 +64,8 @@ export async function GET() {
       ok: db === "up" && missing.length === 0 && quoted.length === 0,
       db,
       dbError,
+      dbErrorCode,
+      dbCause,
       missing,
       quoted,
       // Non-secret by definition; both are wrong often enough to be worth showing.
