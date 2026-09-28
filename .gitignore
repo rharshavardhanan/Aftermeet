@@ -37,3 +37,9 @@ frontend/extension/dist
 # deploy credentials (see scripts/deploy-vars.example.sh)
 scripts/deploy-vars.sh
 .deploy-state.json
+
+# Prisma generate from frontend/web resolves ../../backend/prisma and
+# initialises a stray package at the repo root. Junk, not config.
+/package.json
+/package-lock.json
+/node_modules
