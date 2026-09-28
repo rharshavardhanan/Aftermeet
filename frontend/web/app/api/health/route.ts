@@ -61,6 +61,7 @@ export async function GET() {
   let dbError: string | null = null;
   let dbErrorCode: string | null = null;
   let dbCause: string | null = null;
+  let dbMessage: string | null = null;
   try {
     await prisma.$queryRaw`SELECT 1`;
     db = "up";
@@ -71,6 +72,12 @@ export async function GET() {
     // Classify from the message without echoing it: Prisma embeds the
     // connection string, and P1001's text carries the host.
     const msg = err instanceof Error ? err.message : "";
+    // Prisma's message is the only thing that names the real failure, but it can
+    // embed the connection string. Strip URL credentials, then cap it.
+    dbMessage = msg
+      .replace(/\/\/[^@\s]*@/g, "//[redacted]@")
+      .replace(/\s+/g, " ")
+      .slice(0, 300);
     dbCause = /query engine|libquery|binaryTarget|not found.*engine/i.test(msg)
       ? "prisma-client-not-generated-for-this-runtime"
       : /can.t reach database|P1001|timed out|ECONNREFUSED|ENOTFOUND/i.test(msg)
@@ -91,6 +98,7 @@ export async function GET() {
       dbError,
       dbErrorCode,
       dbCause,
+      dbMessage,
       missing,
       quoted,
       databaseUrl: fingerprint(process.env.DATABASE_URL),
