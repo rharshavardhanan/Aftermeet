@@ -23,6 +23,29 @@ const REQUIRED = [
  * password. The Prisma failure is reported by error class only, since its
  * message embeds the connection string.
  */
+/**
+ * Enough of a connection string's shape to tell a wrong URL from a bad password,
+ * with nothing that could authenticate anyone. The first 11 characters are the
+ * scheme, which is the point when the wrong URL has been pasted entirely.
+ */
+function fingerprint(raw: string | undefined) {
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    return {
+      protocol: u.protocol.replace(":", ""),
+      port: u.port || null,
+      hostSuffix: u.hostname.split(".").slice(-3).join("."),
+      hasUser: Boolean(u.username),
+      hasPassword: Boolean(u.password),
+      pgbouncer: u.searchParams.get("pgbouncer"),
+      length: raw.length,
+    };
+  } catch {
+    return { unparseable: true, startsWith: raw.slice(0, 11), length: raw.length };
+  }
+}
+
 export async function GET() {
   const missing = REQUIRED.filter((k) => !process.env[k]);
 
@@ -50,13 +73,15 @@ export async function GET() {
     const msg = err instanceof Error ? err.message : "";
     dbCause = /query engine|libquery|binaryTarget|not found.*engine/i.test(msg)
       ? "prisma-client-not-generated-for-this-runtime"
-      : /can't reach database|P1001|timed out/i.test(msg)
+      : /can.t reach database|P1001|timed out|ECONNREFUSED|ENOTFOUND/i.test(msg)
         ? "database-unreachable"
-        : /authentication failed|P1000/i.test(msg)
+        : /authentication failed|P1000|password/i.test(msg)
           ? "bad-credentials"
-          : /invalid.*url|the provided database string/i.test(msg)
+          : /must start with the protocol|invalid.*url|provided database string|error validating datasource|invalid port/i.test(msg)
             ? "malformed-connection-string"
-            : "unclassified";
+            : /tenant or user not found/i.test(msg)
+              ? "wrong-project-ref"
+              : "unclassified";
   }
 
   return NextResponse.json(
@@ -68,6 +93,8 @@ export async function GET() {
       dbCause,
       missing,
       quoted,
+      databaseUrl: fingerprint(process.env.DATABASE_URL),
+      directUrl: fingerprint(process.env.DIRECT_URL),
       // Non-secret by definition; both are wrong often enough to be worth showing.
       nextAuthUrl: process.env.NEXTAUTH_URL ?? null,
       apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? null,
