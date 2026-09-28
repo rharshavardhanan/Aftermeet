@@ -51,38 +51,83 @@ export const authOptions: NextAuthOptions = {
     },
   },
   events: {
-    // On first login: provision a personal workspace, membership, billing, prefs.
+    // Provision eagerly on first login, but never let it block sign-in: a throw
+    // here fails the OAuth callback and bounces the user back to /login with no
+    // way to recover, on every subsequent attempt too. getCurrentWorkspace
+    // provisions lazily, so a failure costs one slow first page load.
     async createUser({ user }) {
-      const base = slugify(user.name ?? user.email?.split("@")[0] ?? "workspace");
-      const slug = `${base}-${user.id.slice(0, 6)}`;
-      await prisma.$transaction(async (tx) => {
-        const workspace = await tx.workspace.create({
-          data: {
-            name: user.name ? `${user.name}'s workspace` : "My workspace",
-            slug,
-            memberships: { create: { userId: user.id, role: "OWNER" } },
-            billing: { create: { plan: "FREE", meetingsLimit: 10 } },
-          },
-        });
-        await tx.userPreference.create({ data: { userId: user.id } });
-        await tx.activityLog.create({
-          data: { userId: user.id, action: "workspace.created", meta: { workspaceId: workspace.id } },
-        });
-      });
+      try {
+        await provisionWorkspace(user.id, user.name ?? null, user.email ?? null);
+      } catch (err) {
+        console.error("workspace provisioning failed; will retry on first use", err);
+      }
     },
   },
 };
+
+async function provisionWorkspace(
+  userId: string,
+  name: string | null,
+  email: string | null,
+) {
+  const base = slugify(name ?? email?.split("@")[0] ?? "workspace");
+  return prisma.$transaction(async (tx) => {
+    const workspace = await tx.workspace.create({
+      data: {
+        name: name ? `${name}'s workspace` : "My workspace",
+        // The id suffix keeps the slug unique per user without a lookup.
+        slug: `${base}-${userId.slice(0, 6)}`,
+        memberships: { create: { userId, role: "OWNER" } },
+        billing: { create: { plan: "FREE", meetingsLimit: 10 } },
+      },
+    });
+    await tx.userPreference.upsert({
+      where: { userId },
+      create: { userId },
+      update: {},
+    });
+    await tx.activityLog.create({
+      data: {
+        userId,
+        action: "workspace.created",
+        meta: { workspaceId: workspace.id },
+      },
+    });
+    return workspace;
+  });
+}
 
 export function auth() {
   return getServerSession(authOptions);
 }
 
-/** Returns the signed-in user's first workspace (personal). */
+/**
+ * The signed-in user's personal workspace, provisioning it if the first-login
+ * event did not manage to. Returns null only when provisioning itself fails,
+ * which callers already handle.
+ */
 export async function getCurrentWorkspace(userId: string) {
-  const membership = await prisma.membership.findFirst({
-    where: { userId },
-    orderBy: { createdAt: "asc" },
-    include: { workspace: { include: { billing: true } } },
+  const find = () =>
+    prisma.membership.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      include: { workspace: { include: { billing: true } } },
+    });
+
+  const existing = await find();
+  if (existing) return existing.workspace;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true, email: true },
   });
-  return membership?.workspace ?? null;
+  if (!user) return null;
+
+  try {
+    await provisionWorkspace(userId, user.name, user.email);
+  } catch (err) {
+    // Most likely a concurrent request won the race; re-read before giving up.
+    console.error("lazy workspace provisioning failed", err);
+  }
+  return (await find())?.workspace ?? null;
 }

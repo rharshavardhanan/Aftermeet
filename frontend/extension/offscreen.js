@@ -1,7 +1,10 @@
-// Offscreen document: records the captured tab stream and ships audio chunks.
-// Chunks are accumulated; on stop we assemble a single Blob and forward it for
-// transcription. (Chunked streaming to a realtime ASR endpoint can replace the
-// accumulate-then-send step without changing the rest of the pipeline.)
+// Offscreen document: records the captured tab stream, then uploads it.
+//
+// The upload happens here rather than in the content script for two reasons.
+// Passing the audio to another context meant serialising it a byte per array
+// element, which a half-hour recording turns into millions of entries. And a
+// fetch from here runs in the extension's own context, so host_permissions
+// apply and CORS never enters into it.
 
 let recorder = null;
 let chunks = [];
@@ -12,6 +15,10 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "start-recording") start(msg.streamId);
   if (msg.type === "stop-recording") stop();
 });
+
+function report(type, payload) {
+  chrome.runtime.sendMessage({ target: "background", type, ...payload });
+}
 
 async function start(streamId) {
   try {
@@ -34,29 +41,51 @@ async function start(streamId) {
       if (e.data.size > 0) chunks.push(e.data);
     };
     recorder.onstop = async () => {
-      const blob = new Blob(chunks, { type: "audio/webm" });
-      const buf = await blob.arrayBuffer();
-      // Forward as a transferable-ish base64 payload (service worker can't hold Blobs well).
-      chrome.runtime.sendMessage({
-        target: "background",
-        type: "recording-stopped",
-        mime: "audio/webm",
-        bytes: Array.from(new Uint8Array(buf)),
-      });
       stream.getTracks().forEach((t) => t.stop());
       audioCtx?.close();
+      const blob = new Blob(chunks, { type: "audio/webm" });
+      chunks = [];
+      await upload(blob);
     };
-    recorder.start(4000); // emit every 4s for progressive handling
+    recorder.start(4000); // flush every 4s so nothing is held in one buffer
   } catch (err) {
-    chrome.runtime.sendMessage({
-      target: "background",
-      type: "recording-error",
-      error: String(err?.message ?? err),
-    });
+    report("recording-error", { error: String(err?.message ?? err) });
   }
 }
 
 function stop() {
   if (recorder && recorder.state !== "inactive") recorder.stop();
   recorder = null;
+}
+
+async function upload(blob) {
+  if (blob.size < 1024) {
+    report("recording-error", { error: "Nothing was recorded — no audio on that tab." });
+    return;
+  }
+  const cfg = await chrome.storage.local.get({ apiBase: "", token: "" });
+  if (!cfg.token) {
+    report("recording-error", { error: "Not connected. Paste a token in the popup." });
+    return;
+  }
+
+  try {
+    const form = new FormData();
+    form.append("audio", new File([blob], "call.webm", { type: "audio/webm" }));
+    const res = await fetch(`${cfg.apiBase}/transcribe`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${cfg.token}` },
+      body: form,
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.text) {
+      report("recording-error", {
+        error: json.error ?? json.message ?? "Couldn't transcribe the recording.",
+      });
+      return;
+    }
+    report("transcript-ready", { text: json.text });
+  } catch (err) {
+    report("recording-error", { error: String(err?.message ?? err) });
+  }
 }

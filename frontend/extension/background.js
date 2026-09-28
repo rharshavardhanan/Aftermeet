@@ -1,11 +1,12 @@
 // Service worker — coordinates tab-audio capture across an offscreen document.
 //
-// MV3 can't capture audio directly in the service worker, and getUserMedia is
-// unavailable there. The pattern: the worker obtains a tabCapture stream id,
-// spins up an offscreen document, and hands the id over. The offscreen page
-// does the actual MediaRecorder work and posts audio chunks back.
+// MV3 can't capture audio in the service worker and getUserMedia is unavailable
+// there, so the offscreen document does the MediaRecorder work. The stream id
+// arrives from the popup: chrome.tabCapture only works once the extension has
+// been invoked on the tab, and opening the popup is what counts as invoking it.
 
 let creating = null; // dedupe offscreen creation
+let recordingTabId = null;
 
 async function ensureOffscreen() {
   const has = await chrome.offscreen.hasDocument?.();
@@ -23,14 +24,8 @@ async function ensureOffscreen() {
   creating = null;
 }
 
-async function startCapture(tabId) {
-  await ensureOffscreen();
-  const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId });
-  chrome.runtime.sendMessage({ target: "offscreen", type: "start-recording", streamId });
-}
-
-function stopCapture() {
-  chrome.runtime.sendMessage({ target: "offscreen", type: "stop-recording" });
+function notifyTab(tabId, msg) {
+  if (tabId) chrome.tabs.sendMessage(tabId, msg).catch(() => {});
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -38,27 +33,44 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   (async () => {
     switch (msg.type) {
+      case "state":
+        sendResponse({ ok: true, recording: recordingTabId !== null });
+        break;
+
       case "start": {
-        const tabId = msg.tabId ?? sender.tab?.id;
-        if (!tabId) return sendResponse({ ok: false, error: "No tab" });
-        await startCapture(tabId);
+        const tabId = msg.tabId ?? sender.tab?.id ?? null;
+        if (!msg.streamId) {
+          sendResponse({ ok: false, error: "No stream id" });
+          break;
+        }
+        await ensureOffscreen();
+        recordingTabId = tabId;
+        chrome.runtime.sendMessage({
+          target: "offscreen",
+          type: "start-recording",
+          streamId: msg.streamId,
+        });
+        notifyTab(tabId, { type: "capture-started" });
         sendResponse({ ok: true });
         break;
       }
+
       case "stop": {
-        stopCapture();
+        chrome.runtime.sendMessage({ target: "offscreen", type: "stop-recording" });
+        notifyTab(recordingTabId, { type: "capture-stopping" });
         sendResponse({ ok: true });
         break;
       }
-      // Relay transcript/audio events from offscreen back to the active tab UI.
-      case "audio-chunk":
-      case "recording-stopped":
+
+      // Results come back from the offscreen document as text, never as bytes.
+      case "transcript-ready":
       case "recording-error": {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab?.id) chrome.tabs.sendMessage(tab.id, msg);
+        notifyTab(recordingTabId, msg);
+        recordingTabId = null;
         sendResponse({ ok: true });
         break;
       }
+
       default:
         sendResponse({ ok: false, error: "unknown" });
     }

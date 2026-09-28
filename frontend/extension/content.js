@@ -119,6 +119,14 @@
       renderError("Connect the extension first: open the popup → Connect.");
       return;
     }
+    // Chrome refuses tabCapture unless the extension was invoked on this tab,
+    // and a click in here does not count. Recording therefore starts from the
+    // toolbar popup; this panel follows along once it does.
+    renderError("Open the Aftermeet toolbar icon and press Start AI Notes.");
+  }
+
+  // Driven by the popup via the service worker.
+  function onCaptureStarted() {
     recording = true;
     seconds = 0;
     liveTranscript = "";
@@ -126,9 +134,9 @@
     toggleBtn.classList.add("m2t-btn-stop");
     dot.classList.add("m2t-live");
     transcriptEl.textContent = "Listening…";
+    tasksEl.innerHTML = `<div class="m2t-empty">Tasks appear as the call progresses.</div>`;
     timer = setInterval(() => (timerEl.textContent = fmt(++seconds)), 1000);
     startLiveASR();
-    chrome.runtime.sendMessage({ target: "background", type: "start" });
     reportSession("start");
     heartbeat = setInterval(() => reportSession("heartbeat"), 60_000);
   }
@@ -144,31 +152,20 @@
     stopLiveASR();
     chrome.runtime.sendMessage({ target: "background", type: "stop" });
     reportSession("end");
-    if (liveTranscript.trim().length > 20) await processTranscript(liveTranscript.trim());
   }
 
   toggleBtn.addEventListener("click", () => (recording ? stop() : start()));
 
-  // ---- Receive recording result from offscreen via background -------------
+  // ---- Events from the popup / offscreen document, relayed by background ---
   chrome.runtime.onMessage.addListener(async (msg) => {
-    if (msg.type === "recording-stopped" && Array.isArray(msg.bytes)) {
-      try {
-        const blob = new Blob([new Uint8Array(msg.bytes)], { type: msg.mime || "audio/webm" });
-        const form = new FormData();
-        form.append("audio", new File([blob], "call.webm", { type: blob.type }));
-        const res = await fetch(`${cfg.apiBase}/transcribe`, {
-          method: "POST",
-          headers: authHeaders(),
-          body: form,
-        });
-        const json = await res.json();
-        if (res.ok && json.text) await processTranscript(json.text);
-        else renderError(json.error || "Couldn't transcribe the recording.");
-      } catch {
-        renderError("Couldn't transcribe the recording.");
-      }
+    if (msg.type === "capture-started") onCaptureStarted();
+    if (msg.type === "capture-stopping") await stop();
+    if (msg.type === "transcript-ready" && msg.text) await processTranscript(msg.text);
+    if (msg.type === "recording-error") {
+      renderError(msg.error || "Capture failed.");
+      toggleBtn.disabled = false;
+      toggleBtn.textContent = "Start AI Notes";
     }
-    if (msg.type === "recording-error") renderError(msg.error || "Capture failed.");
   });
 
   // ---- Send transcript to the backend for extraction ----------------------
